@@ -80,9 +80,12 @@ public class NguoiDungController {
         return ResponseEntity.ok(nguoiDungs);
     }
 
-    @GetMapping("/xac-thuc")
-    public ResponseEntity<Object> xacThuc(@RequestParam String email, @RequestParam String token) {
+    @PostMapping("/xac-thuc")
+    public ResponseEntity<Object> xacThuc(@RequestBody Map<String, String> requestBody) {
         try {
+            String email = requestBody.get("email");
+            String token = requestBody.get("token");
+            
             boolean ketQua = nguoiDungService.xacThucEmail(email, token);
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", ketQua);

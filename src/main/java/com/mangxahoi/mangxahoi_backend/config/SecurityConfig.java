@@ -1,5 +1,4 @@
 package com.mangxahoi.mangxahoi_backend.config;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,11 +27,12 @@ public class SecurityConfig {
                     "/api/nguoi-dung/dang-ky", 
                     "/api/nguoi-dung/dang-nhap", 
                     "/api/nguoi-dung/xac-thuc",
-                        "/api/nguoi-dung/dat-lai-mat-khau",
+                    "/api/nguoi-dung/dat-lai-mat-khau",
                     "/api/nguoi-dung/{id}",
                     "/api/auth/**",
                     "/api/quen-mat-khau/**",
-                    "/api/xac-thuc/**"
+                    "/api/xac-thuc/**",
+                    "/api/admin/dang-nhap"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
