@@ -387,6 +387,7 @@ public class BaiVietServiceImpl implements BaiVietService {
         dto.setId(baiViet.getId());
         dto.setIdNguoiDung(baiViet.getNguoiDung().getId());
         dto.setHoTenNguoiDung(baiViet.getNguoiDung().getHoTen());
+ 
         
         // Lấy ảnh đại diện của người dùng nếu có
         if (baiViet.getNguoiDung().getAnhDaiDien() != null) {
