@@ -15,6 +15,7 @@ import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.repository.PhienDangNhapNguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
 import com.mangxahoi.mangxahoi_backend.service.NguoiDungService;
+import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +41,7 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     private final PhienDangNhapNguoiDungRepository phienDangNhapRepository;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
+    private final TokenUtil tokenUtil;
 
     @Override
     @Transactional
@@ -246,9 +248,8 @@ public class NguoiDungServiceImpl implements NguoiDungService {
 
     @Override
     public Page<NguoiDungDTO> timTheoHoTen(String hoTen, Pageable pageable) {
-        // Cần thêm phương thức trong repository
-        // Giả sử đã có phương thức này
-        return null;
+        return nguoiDungRepository.findByHoTenContainingIgnoreCase(hoTen, pageable)
+                .map(this::chuyenSangDTO);
     }
 
     @Override
@@ -340,6 +341,15 @@ public class NguoiDungServiceImpl implements NguoiDungService {
         nguoiDungAnhRepository.save(anhDaiDien);
         
         return imageUrl;
+    }
+    
+    @Override
+    public NguoiDungDTO layThongTinHienTai(String token) {
+        // Lấy thông tin người dùng từ token
+        NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+        
+        // Chuyển đổi sang DTO và trả về
+        return chuyenSangDTO(nguoiDung);
     }
     
     private NguoiDungDTO chuyenSangDTO(NguoiDung nguoiDung) {
