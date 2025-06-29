@@ -24,14 +24,21 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/api/nguoi-dung/**",
                     "/api/nguoi-dung/dang-ky", 
                     "/api/nguoi-dung/dang-nhap", 
                     "/api/nguoi-dung/xac-thuc",
                     "/api/nguoi-dung/dat-lai-mat-khau",
                     "/api/nguoi-dung/{id}",
+                    "/{id}/anh-dai-dien",
+                    "/api/nguoi-dung-anh/**",
                     "/api/auth/**",
                     "/api/quen-mat-khau/**",
                     "/api/xac-thuc/**",
+                    "/api/goi-y/**",
+                    "/tao-goi-y/{id}",
+                    "/api/bai-viet/**",
+                        "/{idNguoiDung}",
                     "/api/admin/dang-nhap"
                 ).permitAll()
                 .anyRequest().authenticated()

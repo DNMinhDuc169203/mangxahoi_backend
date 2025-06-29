@@ -4,6 +4,7 @@ import com.mangxahoi.mangxahoi_backend.dto.request.DangNhapRequest;
 import com.mangxahoi.mangxahoi_backend.dto.response.DangNhapResponse;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.exception.AuthException;
+import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.service.NguoiDungService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -116,6 +119,29 @@ public class NguoiDungController {
             errorResponse.put("thanhCong", false);
             errorResponse.put("message", e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping("/{id}/anh-dai-dien")
+    public ResponseEntity<Object> uploadAnhDaiDien(
+            @PathVariable Integer id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "laAnhChinh", defaultValue = "false") Boolean laAnhChinh) {
+        
+        try {
+            String imageUrl = nguoiDungService.uploadAnhDaiDien(id, file, laAnhChinh);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("url", imageUrl);
+            response.put("laAnhChinh", laAnhChinh);
+            
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IOException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Lỗi khi upload ảnh: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 } 
