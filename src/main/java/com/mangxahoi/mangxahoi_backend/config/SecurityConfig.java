@@ -38,7 +38,7 @@ public class SecurityConfig {
                     "/api/goi-y/**",
                     "/tao-goi-y/{id}",
                     "/api/bai-viet/**",
-                        "/{idNguoiDung}",
+                    "/{idNguoiDung}",
                     "/api/admin/dang-nhap"
                 ).permitAll()
                 .anyRequest().authenticated()

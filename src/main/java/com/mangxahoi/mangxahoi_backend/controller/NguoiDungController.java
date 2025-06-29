@@ -52,6 +52,29 @@ public class NguoiDungController {
         }
     }
 
+    @GetMapping("/thong-tin-hien-tai")
+    public ResponseEntity<Object> layThongTinHienTai(@RequestHeader("Authorization") String authorization) {
+        try {
+            // Lấy token từ header Authorization
+            String token = authorization;
+            if (authorization.startsWith("Bearer ")) {
+                token = authorization.substring(7);
+            }
+            
+            NguoiDungDTO nguoiDung = nguoiDungService.layThongTinHienTai(token);
+            return ResponseEntity.ok(nguoiDung);
+        } catch (AuthException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("errorCode", e.getErrorCode());
+            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Lỗi khi lấy thông tin người dùng: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<NguoiDungDTO> timTheoId(@PathVariable Integer id) {
         return nguoiDungService.timTheoId(id)

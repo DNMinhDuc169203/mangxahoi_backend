@@ -34,6 +34,14 @@ public interface NguoiDungService {
     boolean datLaiMatKhau(String email, String matKhauMoi);
     
     /**
+     * Lấy thông tin người dùng hiện tại từ token
+     * 
+     * @param token Token xác thực
+     * @return Thông tin người dùng hiện tại
+     */
+    NguoiDungDTO layThongTinHienTai(String token);
+    
+    /**
      * Upload ảnh đại diện cho người dùng
      * 
      * @param id ID của người dùng
