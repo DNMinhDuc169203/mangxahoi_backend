@@ -2,6 +2,10 @@ server:
   port: 8080
   servlet:
     context-path: /network
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 spring:
   profiles:
@@ -10,11 +14,32 @@ spring:
     url: "jdbc:mysql://localhost:3306/luan_van_tot_nghiep"
     username: root
     password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    out-of-order: true
   mail:
     host: smtp.gmail.com
     port: 587
-    username: your-email@gmail.com  # Thay bằng email của bạn
-    password: your-app-password     # Thay bằng mật khẩu ứng dụng (không phải mật khẩu đăng nhập)
+    username: your-email@gmail.com
+    password: your-app-password
     properties:
       mail:
         smtp:
@@ -26,3 +51,11 @@ spring:
             trust: smtp.gmail.com
           socketFactory:
             fallback: true
+  config:
+    import: optional:file:./config/cloudinary.properties
+
+# Cloudinary Configuration
+cloudinary:
+  cloud_name: ${CLOUDINARY_CLOUD_NAME}
+  api_key: ${CLOUDINARY_API_KEY}
+  api_secret: ${CLOUDINARY_API_SECRET}

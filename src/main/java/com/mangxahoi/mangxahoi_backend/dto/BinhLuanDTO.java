@@ -23,6 +23,7 @@ public class BinhLuanDTO {
     private LocalDateTime ngayTao;
     private LocalDateTime ngayCapNhat;
     private Integer soLuotThich;
+    private Integer soLuotPhanHoi;
     private Boolean daThich; // Đánh dấu người dùng hiện tại đã thích bình luận này chưa
-    private List<BinhLuanDTO> binhLuanCons;
+    private List<BinhLuanDTO> phanHoi; // Danh sách phản hồi cho bình luận này
 } 

@@ -13,6 +13,7 @@ import com.mangxahoi.mangxahoi_backend.exception.ValidationException;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungAnhRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.repository.PhienDangNhapNguoiDungRepository;
+import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
 import com.mangxahoi.mangxahoi_backend.service.NguoiDungService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,7 +21,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +39,7 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     private final NguoiDungAnhRepository nguoiDungAnhRepository;
     private final PhienDangNhapNguoiDungRepository phienDangNhapRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional
@@ -91,14 +95,14 @@ public class NguoiDungServiceImpl implements NguoiDungService {
         NguoiDung savedNguoiDung = nguoiDungRepository.save(nguoiDung);
         
         // Nếu có ảnh đại diện, lưu ảnh
-        if (nguoiDungDTO.getAnhDaiDien() != null && !nguoiDungDTO.getAnhDaiDien().isEmpty()) {
-            NguoiDungAnh anhDaiDien = NguoiDungAnh.builder()
-                    .nguoiDung(savedNguoiDung)
-                    .url(nguoiDungDTO.getAnhDaiDien())
-                    .laAnhChinh(true)
-                    .build();
-            nguoiDungAnhRepository.save(anhDaiDien);
-        }
+        // if (nguoiDungDTO.getAnhDaiDien() != null && !nguoiDungDTO.getAnhDaiDien().isEmpty()) {
+        //     NguoiDungAnh anhDaiDien = NguoiDungAnh.builder()
+        //             .nguoiDung(savedNguoiDung)
+        //             .url(nguoiDungDTO.getAnhDaiDien())
+        //             .laAnhChinh(true)
+        //             .build();
+        //     nguoiDungAnhRepository.save(anhDaiDien);
+        // }
         
         return chuyenSangDTO(savedNguoiDung);
     }
@@ -303,6 +307,39 @@ public class NguoiDungServiceImpl implements NguoiDungService {
         nguoiDungRepository.save(nguoiDung);
         
         return true;
+    }
+    
+    @Override
+    @Transactional
+    public String uploadAnhDaiDien(Integer id, MultipartFile file, boolean laAnhChinh) throws IOException {
+        // Kiểm tra người dùng tồn tại
+        NguoiDung nguoiDung = nguoiDungRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", id));
+        
+        // Upload ảnh lên Cloudinary
+        String imageUrl = cloudinaryService.uploadFile(file, "nguoi_dung_anh");
+        
+        // Nếu là ảnh chính, cập nhật các ảnh khác thành không phải ảnh chính
+        if (laAnhChinh) {
+            List<NguoiDungAnh> anhDaiDiens = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
+            for (NguoiDungAnh anh : anhDaiDiens) {
+                if (anh.getLaAnhChinh()) {
+                    anh.setLaAnhChinh(false);
+                    nguoiDungAnhRepository.save(anh);
+                }
+            }
+        }
+        
+        // Lưu thông tin ảnh vào database
+        NguoiDungAnh anhDaiDien = NguoiDungAnh.builder()
+                .nguoiDung(nguoiDung)
+                .url(imageUrl)
+                .laAnhChinh(laAnhChinh)
+                .build();
+        
+        nguoiDungAnhRepository.save(anhDaiDien);
+        
+        return imageUrl;
     }
     
     private NguoiDungDTO chuyenSangDTO(NguoiDung nguoiDung) {

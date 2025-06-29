@@ -1,0 +1,4 @@
+# Example Cloudinary credentials - Rename to cloudinary.properties and fill with your actual credentials
+cloudinary.cloud_name=your_cloud_name
+cloudinary.api_key=your_api_key
+cloudinary.api_secret=your_api_secret 
