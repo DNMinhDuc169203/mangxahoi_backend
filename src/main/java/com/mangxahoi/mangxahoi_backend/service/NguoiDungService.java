@@ -19,7 +19,7 @@ public interface NguoiDungService {
     
     void xoaNguoiDung(Integer id);
     
-    Optional<NguoiDungDTO> timTheoId(Integer id);
+    Optional<NguoiDungDTO> timTheoId(Integer profileId, String requesterToken);
     
     Optional<NguoiDungDTO> timTheoEmail(String email);
     
@@ -51,4 +51,29 @@ public interface NguoiDungService {
      * @throws IOException Nếu có lỗi khi upload
      */
     String uploadAnhDaiDien(Integer id, MultipartFile file, boolean laAnhChinh) throws IOException;
+
+    /**
+     * Đổi mật khẩu cho người dùng hiện tại
+     * @param token Token xác thực
+     * @param matKhauCu Mật khẩu cũ
+     * @param matKhauMoi Mật khẩu mới
+     * @return true nếu đổi thành công, throw exception nếu lỗi
+     */
+    boolean doiMatKhau(String token, String matKhauCu, String matKhauMoi);
+
+    /**
+     * Xóa ảnh đại diện của người dùng
+     * @param nguoiDungId ID của người dùng
+     * @param anhId ID của ảnh
+     * @throws IOException Nếu có lỗi khi xóa file trên Cloudinary
+     */
+    void xoaAnhDaiDien(Integer nguoiDungId, Integer anhId) throws IOException;
+
+    /**
+     * Thay đổi mức riêng tư cho người dùng hiện tại
+     * @param token Token xác thực
+     * @param cheDoMoi Chế độ riêng tư mới
+     * @return NguoiDungDTO đã được cập nhật
+     */
+    NguoiDungDTO thayDoiMucRiengTu(String token, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet cheDoMoi);
 } 

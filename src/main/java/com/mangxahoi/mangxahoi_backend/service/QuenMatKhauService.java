@@ -65,6 +65,11 @@ public class QuenMatKhauService {
         if (nguoiDung.getLoaiMaXacThuc() != LoaiMaXacThuc.quen_mat_khau) {
             throw new AuthException("Mã xác thực không phải cho mục đích đặt lại mật khẩu", "AUTH_010");
         }
+
+        // Kiểm tra mật khẩu mới có trùng mật khẩu cũ không
+        if (passwordEncoder.matches(matKhauMoi, nguoiDung.getMatKhauHash())) {
+            throw new ValidationException("Mật khẩu mới không được trùng với mật khẩu cũ");
+        }
         
         // Cập nhật mật khẩu mới
         nguoiDung.setMatKhauHash(passwordEncoder.encode(matKhauMoi));
