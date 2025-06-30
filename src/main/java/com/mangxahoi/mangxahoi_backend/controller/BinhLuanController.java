@@ -9,6 +9,7 @@ import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
 import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.service.BinhLuanService;
+import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,36 +33,39 @@ public class BinhLuanController {
     private final BinhLuanRepository binhLuanRepository;
     private final BaiVietRepository baiVietRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final TokenUtil tokenUtil;
+
+    private NguoiDung getUserFromToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new SecurityException("Invalid or missing Authorization header");
+        }
+        String token = authHeader.substring(7);
+        return tokenUtil.layNguoiDungTuToken(token);
+    }
 
     /**
      * Thêm bình luận mới cho bài viết
      * 
      * @param idBaiViet ID của bài viết
-     * @param idNguoiDung ID của người dùng
+     * @param authorization Token xác thực
      * @param noiDung Nội dung bình luận
      * @return Thông tin bình luận đã thêm
      */
     @PostMapping("/bai-viet/{idBaiViet}")
     public ResponseEntity<BinhLuanDTO> themBinhLuan(
             @PathVariable Integer idBaiViet,
-            @RequestParam Integer idNguoiDung,
+            @RequestHeader("Authorization") String authorization,
             @RequestParam String noiDung) {
         
         try {
-            // Kiểm tra bài viết tồn tại
-            BaiViet baiViet = baiVietRepository.findById(idBaiViet)
-                    .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
-            
-            // Kiểm tra người dùng tồn tại
-            NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
-                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", idNguoiDung));
+            NguoiDung nguoiDung = getUserFromToken(authorization);
             
             // Tạo DTO cho bình luận
             BinhLuanDTO binhLuanDTO = new BinhLuanDTO();
             binhLuanDTO.setNoiDung(noiDung);
             
             // Thêm bình luận
-            BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, idNguoiDung, null, binhLuanDTO);
+            BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, nguoiDung.getId(), null, binhLuanDTO);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(createdBinhLuan);
             
@@ -77,7 +81,7 @@ public class BinhLuanController {
      * 
      * @param idBaiViet ID của bài viết
      * @param idBinhLuanCha ID của bình luận cha
-     * @param idNguoiDung ID của người dùng
+     * @param authorization Token xác thực
      * @param noiDung Nội dung bình luận
      * @return Thông tin bình luận đã thêm
      */
@@ -85,21 +89,15 @@ public class BinhLuanController {
     public ResponseEntity<BinhLuanDTO> themBinhLuanPhanHoi(
             @PathVariable Integer idBaiViet,
             @PathVariable Integer idBinhLuanCha,
-            @RequestParam Integer idNguoiDung,
+            @RequestHeader("Authorization") String authorization,
             @RequestParam String noiDung) {
         
         try {
-            // Kiểm tra bài viết tồn tại
-            BaiViet baiViet = baiVietRepository.findById(idBaiViet)
-                    .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
+            NguoiDung nguoiDung = getUserFromToken(authorization);
             
             // Kiểm tra bình luận cha tồn tại
             BinhLuan binhLuanCha = binhLuanRepository.findById(idBinhLuanCha)
                     .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", idBinhLuanCha));
-            
-            // Kiểm tra người dùng tồn tại
-            NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
-                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", idNguoiDung));
             
             // Kiểm tra bình luận cha thuộc bài viết
             if (!binhLuanCha.getBaiViet().getId().equals(idBaiViet)) {
@@ -111,7 +109,7 @@ public class BinhLuanController {
             binhLuanDTO.setNoiDung(noiDung);
             
             // Thêm bình luận phản hồi
-            BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, idNguoiDung, idBinhLuanCha, binhLuanDTO);
+            BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, nguoiDung.getId(), idBinhLuanCha, binhLuanDTO);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(createdBinhLuan);
             
@@ -126,37 +124,32 @@ public class BinhLuanController {
      * Cập nhật bình luận
      * 
      * @param id ID của bình luận
-     * @param idNguoiDung ID của người dùng
+     * @param authorization Token xác thực
      * @param noiDung Nội dung bình luận mới
      * @return Thông tin bình luận đã cập nhật
      */
     @PutMapping("/{id}")
     public ResponseEntity<BinhLuanDTO> capNhatBinhLuan(
             @PathVariable Integer id,
-            @RequestParam Integer idNguoiDung,
+            @RequestHeader("Authorization") String authorization,
             @RequestParam String noiDung) {
         
         try {
-            // Kiểm tra bình luận tồn tại
-            BinhLuan binhLuan = binhLuanRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", id));
-            
-            // Kiểm tra người dùng có quyền sửa bình luận
-            if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
+            NguoiDung nguoiDung = getUserFromToken(authorization);
             
             // Tạo DTO cho bình luận
             BinhLuanDTO binhLuanDTO = new BinhLuanDTO();
             binhLuanDTO.setNoiDung(noiDung);
             
             // Cập nhật bình luận
-            BinhLuanDTO updatedBinhLuan = binhLuanService.capNhatBinhLuan(id, idNguoiDung, binhLuanDTO);
+            BinhLuanDTO updatedBinhLuan = binhLuanService.capNhatBinhLuan(id, nguoiDung.getId(), binhLuanDTO);
             
             return ResponseEntity.ok(updatedBinhLuan);
             
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -166,17 +159,19 @@ public class BinhLuanController {
      * Xóa bình luận
      * 
      * @param id ID của bình luận
-     * @param idNguoiDung ID của người dùng
+     * @param authorization Token xác thực
      * @return Kết quả xóa
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> xoaBinhLuan(
             @PathVariable Integer id,
-            @RequestParam Integer idNguoiDung) {
+            @RequestHeader("Authorization") String authorization) {
         
         try {
+            NguoiDung nguoiDung = getUserFromToken(authorization);
+            
             // Xóa bình luận
-            boolean result = binhLuanService.xoaBinhLuan(id, idNguoiDung);
+            boolean result = binhLuanService.xoaBinhLuan(id, nguoiDung.getId());
             
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", result);
@@ -186,6 +181,8 @@ public class BinhLuanController {
             
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", false);
@@ -275,16 +272,17 @@ public class BinhLuanController {
      * Thích bình luận
      * 
      * @param idBinhLuan ID của bình luận
-     * @param idNguoiDung ID của người dùng
+     * @param authorization Token xác thực
      * @return Kết quả thích
      */
     @PostMapping("/{idBinhLuan}/thich")
     public ResponseEntity<Map<String, Object>> thichBinhLuan(
             @PathVariable Integer idBinhLuan,
-            @RequestParam Integer idNguoiDung) {
+            @RequestHeader("Authorization") String authorization) {
         
         try {
-            boolean result = binhLuanService.thichBinhLuan(idBinhLuan, idNguoiDung);
+            NguoiDung nguoiDung = getUserFromToken(authorization);
+            boolean result = binhLuanService.thichBinhLuan(idBinhLuan, nguoiDung.getId());
             
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", result);
@@ -307,16 +305,17 @@ public class BinhLuanController {
      * Bỏ thích bình luận
      * 
      * @param idBinhLuan ID của bình luận
-     * @param idNguoiDung ID của người dùng
+     * @param authorization Token xác thực
      * @return Kết quả bỏ thích
      */
     @DeleteMapping("/{idBinhLuan}/thich")
     public ResponseEntity<Map<String, Object>> boThichBinhLuan(
             @PathVariable Integer idBinhLuan,
-            @RequestParam Integer idNguoiDung) {
+            @RequestHeader("Authorization") String authorization) {
         
         try {
-            boolean result = binhLuanService.boThichBinhLuan(idBinhLuan, idNguoiDung);
+            NguoiDung nguoiDung = getUserFromToken(authorization);
+            boolean result = binhLuanService.boThichBinhLuan(idBinhLuan, nguoiDung.getId());
             
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", result);

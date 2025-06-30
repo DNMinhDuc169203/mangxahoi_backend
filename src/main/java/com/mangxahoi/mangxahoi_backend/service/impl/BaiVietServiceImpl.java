@@ -132,10 +132,15 @@ public class BaiVietServiceImpl implements BaiVietService {
 
     @Override
     @Transactional
-    public BaiVietDTO capNhatBaiViet(Integer id, BaiVietDTO baiVietDTO) {
+    public BaiVietDTO capNhatBaiViet(Integer id, BaiVietDTO baiVietDTO, Integer idNguoiDung) {
         // Tìm bài viết
         BaiViet baiViet = baiVietRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", id));
+
+        // Kiểm tra quyền sở hữu
+        if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+            throw new SecurityException("Bạn không có quyền cập nhật bài viết này");
+        }
 
         // Cập nhật thông tin
         baiViet.setNoiDung(baiVietDTO.getNoiDung());
@@ -152,10 +157,15 @@ public class BaiVietServiceImpl implements BaiVietService {
 
     @Override
     @Transactional
-    public void xoaBaiViet(Integer id) {
+    public void xoaBaiViet(Integer id, Integer idNguoiDung) {
         // Tìm bài viết
         BaiViet baiViet = baiVietRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", id));
+
+        // Kiểm tra quyền sở hữu
+        if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+            throw new SecurityException("Bạn không có quyền xóa bài viết này");
+        }
 
         // Xóa các media trên Cloudinary
         List<BaiVietMedia> mediaList = baiVietMediaRepository.findByBaiViet(baiViet);
