@@ -11,6 +11,7 @@ import com.mangxahoi.mangxahoi_backend.repository.NguoiDungAnhRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
 import com.mangxahoi.mangxahoi_backend.service.NguoiDungService;
+import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,7 @@ public class NguoiDungController {
     private final NguoiDungRepository nguoiDungRepository;
     private final NguoiDungAnhRepository nguoiDungAnhRepository;
     private final CloudinaryService cloudinaryService;
+    private final TokenUtil tokenUtil;
 
     @PostMapping("/dang-ky")
     public ResponseEntity<Object> dangKy(@Valid @RequestBody NguoiDungDTO nguoiDungDTO) {
@@ -105,12 +107,14 @@ public class NguoiDungController {
         return ResponseEntity.ok(nguoiDungCapNhat);
     }
 
-    @DeleteMapping("/{nguoiDungId}/anh/{anhId}")
+    @DeleteMapping("/anh/{anhId}")
     public ResponseEntity<Object> xoaAnh(
-            @PathVariable Integer nguoiDungId,
+            @RequestHeader("Authorization") String authorization,
             @PathVariable Integer anhId) {
         try {
-            nguoiDungService.xoaAnhDaiDien(nguoiDungId, anhId);
+            String token = authorization.substring(7);
+            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+            nguoiDungService.xoaAnhDaiDien(nguoiDung.getId(), anhId);
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", true);
             response.put("message", "Đã xóa ảnh thành công");
@@ -186,18 +190,22 @@ public class NguoiDungController {
         }
     }
 
-    @PostMapping("/{id}/anh-dai-dien")
+    @PostMapping("/anh-dai-dien")
     public ResponseEntity<Object> uploadAnhDaiDien(
-            @PathVariable Integer id,
+            @RequestHeader("Authorization") String authorization,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "laAnhChinh", defaultValue = "true") boolean laAnhChinh) {
         try {
+            String token = authorization.substring(7);
+            com.mangxahoi.mangxahoi_backend.entity.NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+            Integer id = nguoiDung.getId();
+
             String imageUrl = nguoiDungService.uploadAnhDaiDien(id, file, laAnhChinh);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("url", imageUrl);
             response.put("laAnhChinh", laAnhChinh);
-            
+
             return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException e) {
             Map<String, Object> errorResponse = new HashMap<>();
@@ -231,29 +239,30 @@ public class NguoiDungController {
         }
     }
 
-    @PutMapping("/{id}/anh/{anhId}/chinh")
+    @PutMapping("/anh/{anhId}/chinh")
     public ResponseEntity<Map<String, Object>> datAnhChinh(
-            @PathVariable("id") Integer nguoiDungId,
+            @RequestHeader("Authorization") String authorization,
             @PathVariable Integer anhId) {
         try {
-            NguoiDung nguoiDung = nguoiDungRepository.findById(nguoiDungId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", nguoiDungId));
+            String token = authorization.substring(7);
+            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+
+            // Kiểm tra ảnh có tồn tại và thuộc về người dùng không
             NguoiDungAnh anh = nguoiDungAnhRepository.findById(anhId)
                     .orElseThrow(() -> new ResourceNotFoundException("Ảnh", "id", anhId));
-            if (!anh.getNguoiDung().getId().equals(nguoiDungId)) {
+            if (!anh.getNguoiDung().getId().equals(nguoiDung.getId())) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("error", "Ảnh không thuộc về người dùng này");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
+
+            // Đặt làm ảnh chính
             List<NguoiDungAnh> anhDaiDiens = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
             for (NguoiDungAnh anhDaiDien : anhDaiDiens) {
-                if (anhDaiDien.getLaAnhChinh()) {
-                    anhDaiDien.setLaAnhChinh(false);
-                    nguoiDungAnhRepository.save(anhDaiDien);
-                }
+                anhDaiDien.setLaAnhChinh(anhDaiDien.getId().equals(anhId));
+                nguoiDungAnhRepository.save(anhDaiDien);
             }
-            anh.setLaAnhChinh(true);
-            nguoiDungAnhRepository.save(anh);
+
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", true);
             response.put("message", "Đã đặt ảnh làm ảnh đại diện chính");
@@ -263,28 +272,30 @@ public class NguoiDungController {
         }
     }
 
-    @GetMapping("/{id}/anh")
-    public ResponseEntity<List<NguoiDungAnh>> layDanhSachAnh(@PathVariable("id") Integer nguoiDungId) {
+    @GetMapping("/anh")
+    public ResponseEntity<List<NguoiDungAnh>> layDanhSachAnh(
+            @RequestHeader("Authorization") String authorization) {
         try {
-            NguoiDung nguoiDung = nguoiDungRepository.findById(nguoiDungId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", nguoiDungId));
+            String token = authorization.substring(7);
+            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
             List<NguoiDungAnh> anhDaiDiens = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
             return ResponseEntity.ok(anhDaiDiens);
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
-    @GetMapping("/{id}/anh/chinh")
-    public ResponseEntity<NguoiDungAnh> layAnhChinh(@PathVariable("id") Integer nguoiDungId) {
+    @GetMapping("/anh/chinh")
+    public ResponseEntity<NguoiDungAnh> layAnhChinh(
+             @RequestHeader("Authorization") String authorization) {
         try {
-            NguoiDung nguoiDung = nguoiDungRepository.findById(nguoiDungId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", nguoiDungId));
+            String token = authorization.substring(7);
+            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
             Optional<NguoiDungAnh> anhChinh = nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true);
             return anhChinh.map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
