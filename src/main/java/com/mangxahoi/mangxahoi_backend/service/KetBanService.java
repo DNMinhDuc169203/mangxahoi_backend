@@ -10,11 +10,11 @@ import java.util.List;
 public interface KetBanService {
     boolean guiLoiMoiKetBan(Integer idNguoiGui, Integer idNguoiNhan);
     
-    boolean chapNhanLoiMoiKetBan(Integer idLoiMoi);
+    boolean chapNhanLoiMoiKetBan(Integer idNguoiDung, Integer idLoiMoi);
     
-    boolean tuChoiLoiMoiKetBan(Integer idLoiMoi);
+    boolean tuChoiLoiMoiKetBan(Integer idNguoiDung, Integer idLoiMoi);
     
-    boolean huyLoiMoiKetBan(Integer idLoiMoi);
+    boolean huyLoiMoiKetBan(Integer idNguoiDung, Integer idLoiMoi);
     
     boolean huyKetBan(Integer idNguoiDung1, Integer idNguoiDung2);
     

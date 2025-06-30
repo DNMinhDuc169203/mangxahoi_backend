@@ -61,10 +61,12 @@ public class KetBanServiceImpl implements KetBanService {
 
     @Override
     @Transactional
-    public boolean chapNhanLoiMoiKetBan(Integer idLoiMoi) {
+    public boolean chapNhanLoiMoiKetBan(Integer idNguoiDung, Integer idLoiMoi) {
         KetBan ketBan = ketBanRepository.findById(idLoiMoi)
                 .orElseThrow(() -> new ResourceNotFoundException("Lời mời", "id", idLoiMoi));
-        
+        if (!ketBan.getNguoiNhan().getId().equals(idNguoiDung)) {
+            throw new ValidationException("Bạn không có quyền chấp nhận lời mời này");
+        }
         ketBan.setTrangThai(TrangThaiKetBan.ban_be);
         ketBanRepository.save(ketBan);
         return true;
@@ -72,18 +74,26 @@ public class KetBanServiceImpl implements KetBanService {
 
     @Override
     @Transactional
-    public boolean tuChoiLoiMoiKetBan(Integer idLoiMoi) {
+    public boolean tuChoiLoiMoiKetBan(Integer idNguoiDung, Integer idLoiMoi) {
         KetBan ketBan = ketBanRepository.findById(idLoiMoi)
                 .orElseThrow(() -> new ResourceNotFoundException("Lời mời", "id", idLoiMoi));
+        if (!ketBan.getNguoiNhan().getId().equals(idNguoiDung)) {
+            throw new ValidationException("Bạn không có quyền từ chối lời mời này");
+        }
         ketBanRepository.delete(ketBan);
         return true;
     }
 
     @Override
     @Transactional
-    public boolean huyLoiMoiKetBan(Integer idLoiMoi) {
-        // Tương tự từ chối
-        return tuChoiLoiMoiKetBan(idLoiMoi);
+    public boolean huyLoiMoiKetBan(Integer idNguoiDung, Integer idLoiMoi) {
+        KetBan ketBan = ketBanRepository.findById(idLoiMoi)
+                .orElseThrow(() -> new ResourceNotFoundException("Lời mời", "id", idLoiMoi));
+        if (!ketBan.getNguoiGui().getId().equals(idNguoiDung)) {
+            throw new ValidationException("Bạn không có quyền hủy lời mời này");
+        }
+        ketBanRepository.delete(ketBan);
+        return true;
     }
 
     @Override
