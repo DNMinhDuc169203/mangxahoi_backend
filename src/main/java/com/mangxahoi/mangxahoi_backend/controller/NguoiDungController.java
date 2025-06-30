@@ -190,31 +190,9 @@ public class NguoiDungController {
     public ResponseEntity<Object> uploadAnhDaiDien(
             @PathVariable Integer id,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "laAnhChinh", defaultValue = "false") Boolean laAnhChinh) {
-        
+            @RequestParam(value = "laAnhChinh", defaultValue = "true") boolean laAnhChinh) {
         try {
-            NguoiDung nguoiDung = nguoiDungRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", id));
-            
-            String imageUrl = cloudinaryService.uploadFile(file, "nguoi_dung_anh");
-            
-            if (laAnhChinh) {
-                List<NguoiDungAnh> anhDaiDiens = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
-                for (NguoiDungAnh anh : anhDaiDiens) {
-                    if (anh.getLaAnhChinh()) {
-                        anh.setLaAnhChinh(false);
-                        nguoiDungAnhRepository.save(anh);
-                    }
-                }
-            }
-            
-            NguoiDungAnh anhDaiDien = NguoiDungAnh.builder()
-                    .nguoiDung(nguoiDung)
-                    .url(imageUrl)
-                    .laAnhChinh(laAnhChinh)
-                    .build();
-            
-            nguoiDungAnhRepository.save(anhDaiDien);
+            String imageUrl = nguoiDungService.uploadAnhDaiDien(id, file, laAnhChinh);
             
             Map<String, Object> response = new HashMap<>();
             response.put("url", imageUrl);
@@ -222,8 +200,10 @@ public class NguoiDungController {
             
             return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (IOException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        } catch (IOException | RuntimeException e) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Lỗi khi upload ảnh: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
