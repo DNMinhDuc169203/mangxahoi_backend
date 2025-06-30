@@ -22,9 +22,9 @@ public interface KetBanRepository extends JpaRepository<KetBan, Integer> {
     
     Optional<KetBan> findByNguoiGuiAndNguoiNhan(NguoiDung nguoiGui, NguoiDung nguoiNhan);
     
-    List<KetBan> findByNguoiGuiAndTrangThai(NguoiDung nguoiGui, TrangThaiKetBan trangThai);
+    Page<KetBan> findByNguoiGuiAndTrangThai(NguoiDung nguoiGui, TrangThaiKetBan trangThai, Pageable pageable);
     
-    List<KetBan> findByNguoiNhanAndTrangThai(NguoiDung nguoiNhan, TrangThaiKetBan trangThai);
+    Page<KetBan> findByNguoiNhanAndTrangThai(NguoiDung nguoiNhan, TrangThaiKetBan trangThai, Pageable pageable);
     
     @Query("SELECT k FROM KetBan k WHERE k.trangThai = 'ban_be' AND (k.nguoiGui = :nguoiDung OR k.nguoiNhan = :nguoiDung)")
     Page<KetBan> findFriends(@Param("nguoiDung") NguoiDung nguoiDung, Pageable pageable);

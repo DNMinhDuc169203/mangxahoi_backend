@@ -13,6 +13,7 @@ import com.mangxahoi.mangxahoi_backend.exception.ValidationException;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungAnhRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.repository.PhienDangNhapNguoiDungRepository;
+import com.mangxahoi.mangxahoi_backend.repository.KetBanRepository;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
 import com.mangxahoi.mangxahoi_backend.service.NguoiDungService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
@@ -27,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -39,6 +41,7 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     private final NguoiDungRepository nguoiDungRepository;
     private final NguoiDungAnhRepository nguoiDungAnhRepository;
     private final PhienDangNhapNguoiDungRepository phienDangNhapRepository;
+    private final KetBanRepository ketBanRepository;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
     private final TokenUtil tokenUtil;
@@ -223,9 +226,49 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     }
 
     @Override
-    public Optional<NguoiDungDTO> timTheoId(Integer id) {
-        return nguoiDungRepository.findById(id)
-                .map(this::chuyenSangDTO);
+    public Optional<NguoiDungDTO> timTheoId(Integer profileId, String requesterToken) {
+        // Lấy thông tin người dùng của profile được yêu cầu
+        Optional<NguoiDung> profileOwnerOpt = nguoiDungRepository.findById(profileId);
+        if (profileOwnerOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        NguoiDung profileOwner = profileOwnerOpt.get();
+
+        // Lấy thông tin người dùng đang thực hiện yêu cầu (nếu có)
+        NguoiDung requester = null;
+        if (requesterToken != null && !requesterToken.isEmpty()) {
+            try {
+                requester = tokenUtil.layNguoiDungTuToken(requesterToken);
+            } catch (Exception e) {
+                // Bỏ qua nếu token không hợp lệ, coi như người dùng chưa đăng nhập
+            }
+        }
+
+        // Nếu người xem là chính chủ hồ sơ hoặc là admin, luôn trả về đầy đủ
+        if (requester != null && (requester.getId().equals(profileOwner.getId()) || requester.getVaiTro() == com.mangxahoi.mangxahoi_backend.enums.VaiTro.quan_tri_vien)) {
+            return Optional.of(chuyenSangDTO(profileOwner));
+        }
+
+        // Áp dụng logic dựa trên mức riêng tư
+        switch (profileOwner.getMucRiengTu()) {
+            case cong_khai:
+                return Optional.of(chuyenSangDTO(profileOwner));
+
+            case rieng_tu:
+                // Chỉ admin hoặc chính chủ mới được xem (đã xử lý ở trên)
+                // Những người khác sẽ thấy thông tin hạn chế
+                return Optional.of(chuyenSangDTOHancHe(profileOwner));
+
+            case ban_be:
+                if (requester != null && ketBanRepository.areFriends(profileOwner, requester).isPresent()) {
+                    return Optional.of(chuyenSangDTO(profileOwner));
+                } else {
+                    return Optional.of(chuyenSangDTOHancHe(profileOwner));
+                }
+
+            default:
+                return Optional.empty(); // Hoặc trả về hạn chế theo mặc định
+        }
     }
 
     @Override
@@ -382,11 +425,126 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     }
 
     /**
+     * Chuyển đổi NguoiDung sang NguoiDungDTO với thông tin bị hạn chế
+     */
+    private NguoiDungDTO chuyenSangDTOHancHe(NguoiDung nguoiDung) {
+        // Lấy ảnh đại diện
+        String anhDaiDien = null;
+        Optional<NguoiDungAnh> anhDaiDienOpt = nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true);
+        if (anhDaiDienOpt.isPresent()) {
+            anhDaiDien = anhDaiDienOpt.get().getUrl();
+        }
+
+        return NguoiDungDTO.builder()
+                .id(nguoiDung.getId())
+                .hoTen(nguoiDung.getHoTen())
+                .tieuSu(nguoiDung.getTieuSu())
+                .anhDaiDien(anhDaiDien)
+                // Các trường khác sẽ là null hoặc giá trị mặc định
+                .build();
+    }
+
+    /**
      * Tạo mã xác thực ngẫu nhiên 6 số
      */
     private String taoMaNgauNhien() {
         Random random = new Random();
         int number = 100000 + random.nextInt(900000); // số từ 100000 đến 999999
         return String.valueOf(number);
+    }
+
+    @Override
+    public boolean doiMatKhau(String token, String matKhauCu, String matKhauMoi) {
+        NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(matKhauCu, nguoiDung.getMatKhauHash())) {
+            throw new ValidationException("Mật khẩu cũ không đúng");
+        }
+        // Kiểm tra mật khẩu mới khác mật khẩu cũ
+        if (passwordEncoder.matches(matKhauMoi, nguoiDung.getMatKhauHash())) {
+            throw new ValidationException("Mật khẩu mới không được trùng với mật khẩu cũ");
+        }
+        // Đổi mật khẩu
+        nguoiDung.setMatKhauHash(passwordEncoder.encode(matKhauMoi));
+        nguoiDungRepository.save(nguoiDung);
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public void xoaAnhDaiDien(Integer nguoiDungId, Integer anhId) throws IOException {
+        // Tìm ảnh trong DB
+        NguoiDungAnh anh = nguoiDungAnhRepository.findById(anhId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ảnh", "id", anhId));
+
+        // Kiểm tra ảnh có thuộc về người dùng không
+        if (!anh.getNguoiDung().getId().equals(nguoiDungId)) {
+            throw new AuthException("Bạn không có quyền xóa ảnh này", "AUTH_FORBIDDEN");
+        }
+
+        // Xóa ảnh khỏi Cloudinary
+        String imageUrl = anh.getUrl();
+        String publicId = extractPublicIdFromUrl(imageUrl);
+        cloudinaryService.deleteFile(publicId);
+
+        // Xóa ảnh khỏi database
+        nguoiDungAnhRepository.delete(anh);
+
+        // Nếu ảnh vừa xóa là ảnh chính, và người dùng vẫn còn ảnh khác,
+        // thì đặt ảnh mới nhất làm ảnh chính mới.
+        if (anh.getLaAnhChinh()) {
+            NguoiDung nguoiDung = anh.getNguoiDung();
+            List<NguoiDungAnh> remainingAvatars = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
+            if (!remainingAvatars.isEmpty()) {
+                // Sắp xếp để tìm ảnh mới nhất
+                remainingAvatars.sort(Comparator.comparing(NguoiDungAnh::getNgayTao).reversed());
+                NguoiDungAnh newMainAvatar = remainingAvatars.get(0);
+                newMainAvatar.setLaAnhChinh(true);
+                nguoiDungAnhRepository.save(newMainAvatar);
+            }
+        }
+    }
+
+    private String extractPublicIdFromUrl(String imageUrl) throws IOException {
+        try {
+            // ví dụ: http://res.cloudinary.com/cloud/image/upload/v123/folder/image.jpg
+            // publicId cần lấy là "folder/image"
+            
+            int uploadIndex = imageUrl.indexOf("/upload/");
+            if (uploadIndex == -1) {
+                throw new IllegalArgumentException("URL không hợp lệ, không chứa '/upload/'");
+            }
+
+            // Lấy phần path sau /upload/ (có thể chứa version, ví dụ v123456/)
+            String pathWithVersion = imageUrl.substring(uploadIndex + 8);
+
+            String publicIdWithExtension;
+            int firstSlashIndex = pathWithVersion.indexOf('/');
+            
+            // Bỏ qua version nếu có
+            if (firstSlashIndex != -1 && pathWithVersion.startsWith("v")) {
+                 publicIdWithExtension = pathWithVersion.substring(firstSlashIndex + 1);
+            } else {
+                 publicIdWithExtension = pathWithVersion;
+            }
+            
+            int dotIndex = publicIdWithExtension.lastIndexOf('.');
+            if (dotIndex == -1) {
+                return publicIdWithExtension; // không có extension
+            }
+
+            return publicIdWithExtension.substring(0, dotIndex);
+        } catch (Exception e) {
+            throw new IOException("Không thể trích xuất public ID từ URL: " + imageUrl, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public NguoiDungDTO thayDoiMucRiengTu(String token, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet cheDoMoi) {
+        NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+        nguoiDung.setMucRiengTu(cheDoMoi);
+        NguoiDung updatedNguoiDung = nguoiDungRepository.save(nguoiDung);
+        return chuyenSangDTO(updatedNguoiDung);
     }
 }

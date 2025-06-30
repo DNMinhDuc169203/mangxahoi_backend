@@ -1,5 +1,8 @@
 package com.mangxahoi.mangxahoi_backend.entity;
 
+import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiKetBan;
+import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,11 +29,13 @@ public class KetBan {
     @JoinColumn(name = "id_nguoi_nhan", nullable = false)
     private NguoiDung nguoiNhan;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "trang_thai")
-    private String trangThai;
+    private TrangThaiKetBan trangThai;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "loai")
-    private String loai;
+    private LoaiKetBan loai;
 
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
@@ -45,8 +50,12 @@ public class KetBan {
     protected void onCreate() {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
-        trangThai = "cho_chap_nhan";
-        loai = "ket_ban";
+        if (trangThai == null) {
+            trangThai = TrangThaiKetBan.cho_chap_nhan;
+        }
+        if (loai == null) {
+            loai = LoaiKetBan.ket_ban;
+        }
     }
 
     @PreUpdate
