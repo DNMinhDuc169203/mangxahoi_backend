@@ -356,25 +356,32 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     @Override
     @Transactional
     public String uploadAnhDaiDien(Integer id, MultipartFile file, boolean laAnhChinh) throws IOException {
-        // Kiểm tra người dùng tồn tại
         NguoiDung nguoiDung = nguoiDungRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", id));
-        
-        // Upload ảnh lên Cloudinary
-        String imageUrl = cloudinaryService.uploadFile(file, "nguoi_dung_anh");
-        
-        // Nếu là ảnh chính, cập nhật các ảnh khác thành không phải ảnh chính
+
+        // Nếu là ảnh chính, tìm và xóa ảnh đại diện chính cũ
         if (laAnhChinh) {
-            List<NguoiDungAnh> anhDaiDiens = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
-            for (NguoiDungAnh anh : anhDaiDiens) {
-                if (anh.getLaAnhChinh()) {
-                    anh.setLaAnhChinh(false);
-                    nguoiDungAnhRepository.save(anh);
+            nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true).ifPresent(anhCu -> {
+                try {
+                    // Xóa ảnh cũ trên Cloudinary
+                    String oldImageUrl = anhCu.getUrl();
+                    String publicId = extractPublicIdFromUrl(oldImageUrl);
+                    cloudinaryService.deleteFile(publicId);
+
+                    // Xóa ảnh cũ trong DB
+                    nguoiDungAnhRepository.delete(anhCu);
+                } catch (IOException e) {
+                    // Cần có cơ chế xử lý lỗi tốt hơn ở đây, ví dụ như logging
+                    // Tạm thời ném ra ngoài để controller xử lý
+                    throw new RuntimeException("Lỗi khi xóa ảnh cũ: " + e.getMessage(), e);
                 }
-            }
+            });
         }
         
-        // Lưu thông tin ảnh vào database
+        // Upload ảnh mới lên Cloudinary
+        String imageUrl = cloudinaryService.uploadFile(file, "nguoi_dung_anh");
+        
+        // Lưu thông tin ảnh mới vào database
         NguoiDungAnh anhDaiDien = NguoiDungAnh.builder()
                 .nguoiDung(nguoiDung)
                 .url(imageUrl)
