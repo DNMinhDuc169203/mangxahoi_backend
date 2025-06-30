@@ -33,20 +33,29 @@ public class KetBanController {
     }
 
     @PostMapping("/chap-nhan/{idLoiMoi}")
-    public ResponseEntity<Map<String, String>> chapNhanLoiMoiKetBan(@PathVariable Integer idLoiMoi) {
-        ketBanService.chapNhanLoiMoiKetBan(idLoiMoi);
+    public ResponseEntity<Map<String, String>> chapNhanLoiMoiKetBan(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Integer idLoiMoi) {
+        Integer idNguoiDung = getUserIdFromToken(authHeader);
+        ketBanService.chapNhanLoiMoiKetBan(idNguoiDung, idLoiMoi);
         return ResponseEntity.ok(Map.of("message", "Chấp nhận lời mời kết bạn thành công."));
     }
 
     @DeleteMapping("/tu-choi/{idLoiMoi}")
-    public ResponseEntity<Map<String, String>> tuChoiLoiMoiKetBan(@PathVariable Integer idLoiMoi) {
-        ketBanService.tuChoiLoiMoiKetBan(idLoiMoi);
+    public ResponseEntity<Map<String, String>> tuChoiLoiMoiKetBan(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Integer idLoiMoi) {
+        Integer idNguoiDung = getUserIdFromToken(authHeader);
+        ketBanService.tuChoiLoiMoiKetBan(idNguoiDung, idLoiMoi);
         return ResponseEntity.ok(Map.of("message", "Từ chối lời mời kết bạn thành công."));
     }
 
     @DeleteMapping("/huy-loi-moi/{idLoiMoi}")
-    public ResponseEntity<Map<String, String>> huyLoiMoiKetBan(@PathVariable Integer idLoiMoi) {
-        ketBanService.huyLoiMoiKetBan(idLoiMoi);
+    public ResponseEntity<Map<String, String>> huyLoiMoiKetBan(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Integer idLoiMoi) {
+        Integer idNguoiDung = getUserIdFromToken(authHeader);
+        ketBanService.huyLoiMoiKetBan(idNguoiDung, idLoiMoi);
         return ResponseEntity.ok(Map.of("message", "Hủy lời mời đã gửi thành công."));
     }
 

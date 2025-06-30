@@ -38,6 +38,8 @@ public class SecurityConfig {
                     "/api/goi-y/**",
                     "/tao-goi-y/{id}",
                     "/api/bai-viet/**",
+                    "/api/binh-luan/**",
+                    "/api/ket-ban/**",
                     "/{idNguoiDung}",
                     "/api/admin/dang-nhap"
                 ).permitAll()
