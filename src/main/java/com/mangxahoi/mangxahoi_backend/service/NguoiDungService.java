@@ -3,6 +3,7 @@ package com.mangxahoi.mangxahoi_backend.service;
 import com.mangxahoi.mangxahoi_backend.dto.request.DangNhapRequest;
 import com.mangxahoi.mangxahoi_backend.dto.response.DangNhapResponse;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
+import com.mangxahoi.mangxahoi_backend.dto.request.PrivacySettingsRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -76,4 +77,12 @@ public interface NguoiDungService {
      * @return NguoiDungDTO đã được cập nhật
      */
     NguoiDungDTO thayDoiMucRiengTu(String token, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet cheDoMoi);
+
+    /**
+     * Cập nhật cài đặt riêng tư cho người dùng hiện tại
+     * @param token Token xác thực
+     * @param request DTO chứa các cài đặt riêng tư mới
+     * @return NguoiDungDTO đã được cập nhật
+     */
+    NguoiDungDTO capNhatCaiDatRiengTu(String token, PrivacySettingsRequest request);
 } 

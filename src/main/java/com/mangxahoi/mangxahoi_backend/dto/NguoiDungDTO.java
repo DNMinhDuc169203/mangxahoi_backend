@@ -38,4 +38,8 @@ public class NguoiDungDTO {
     private Integer soBaiDang;
     private VaiTro vaiTro;
     private String anhDaiDien;
+    private Boolean emailCongKhai;
+    private Boolean sdtCongKhai;
+    private Boolean ngaySinhCongKhai;
+    private Boolean gioiTinhCongKhai;
 } 

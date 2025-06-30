@@ -3,6 +3,8 @@ package com.mangxahoi.mangxahoi_backend.service.impl;
 import com.mangxahoi.mangxahoi_backend.dto.request.DangNhapRequest;
 import com.mangxahoi.mangxahoi_backend.dto.response.DangNhapResponse;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
+import com.mangxahoi.mangxahoi_backend.dto.NguoiDungAnhDTO;
+import com.mangxahoi.mangxahoi_backend.dto.request.PrivacySettingsRequest;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
 import com.mangxahoi.mangxahoi_backend.entity.PhienDangNhapNguoiDung;
@@ -403,32 +405,31 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     }
     
     private NguoiDungDTO chuyenSangDTO(NguoiDung nguoiDung) {
-        // Lấy ảnh đại diện
-        String anhDaiDien = null;
-        Optional<NguoiDungAnh> anhDaiDienOpt = nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true);
-        if (anhDaiDienOpt.isPresent()) {
-            anhDaiDien = anhDaiDienOpt.get().getUrl();
+        if (nguoiDung == null) {
+            return null;
         }
-        
-        return NguoiDungDTO.builder()
-                .id(nguoiDung.getId())
-                .email(nguoiDung.getEmail())
-                .soDienThoai(nguoiDung.getSoDienThoai())
-                .hoTen(nguoiDung.getHoTen())
-                .tieuSu(nguoiDung.getTieuSu())
-                .ngaySinh(nguoiDung.getNgaySinh())
-                .gioiTinh(nguoiDung.getGioiTinh())
-                .diaChi(nguoiDung.getDiaChi())
-                .daXacThuc(nguoiDung.getDaXacThuc())
-                .dangHoatDong(nguoiDung.getDangHoatDong())
-                .mucRiengTu(nguoiDung.getMucRiengTu())
-                .ngayTao(nguoiDung.getNgayTao())
-                .lanDangNhapCuoi(nguoiDung.getLanDangNhapCuoi())
-                .soBanBe(nguoiDung.getSoBanBe())
-                .soBaiDang(nguoiDung.getSoBaiDang())
-                .vaiTro(nguoiDung.getVaiTro())
-                .anhDaiDien(anhDaiDien)
-                .build();
+        NguoiDungDTO dto = new NguoiDungDTO();
+        dto.setId(nguoiDung.getId());
+        dto.setEmail(nguoiDung.getEmail());
+        dto.setSoDienThoai(nguoiDung.getSoDienThoai());
+        dto.setHoTen(nguoiDung.getHoTen());
+        dto.setTieuSu(nguoiDung.getTieuSu());
+        dto.setNgaySinh(nguoiDung.getNgaySinh());
+        dto.setGioiTinh(nguoiDung.getGioiTinh());
+        dto.setDiaChi(nguoiDung.getDiaChi());
+        dto.setMucRiengTu(nguoiDung.getMucRiengTu());
+        dto.setSoBanBe(nguoiDung.getSoBanBe());
+        dto.setSoBaiDang(nguoiDung.getSoBaiDang());
+
+        dto.setEmailCongKhai(nguoiDung.getEmailCongKhai());
+        dto.setSdtCongKhai(nguoiDung.getSdtCongKhai());
+        dto.setNgaySinhCongKhai(nguoiDung.getNgaySinhCongKhai());
+        dto.setGioiTinhCongKhai(nguoiDung.getGioiTinhCongKhai());
+
+        Optional<NguoiDungAnh> anhChinhOpt = nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true);
+        anhChinhOpt.ifPresent(nguoiDungAnh -> dto.setAnhDaiDien(nguoiDungAnh.getUrl()));
+
+        return dto;
     }
 
     /**
@@ -553,5 +554,26 @@ public class NguoiDungServiceImpl implements NguoiDungService {
         nguoiDung.setMucRiengTu(cheDoMoi);
         NguoiDung updatedNguoiDung = nguoiDungRepository.save(nguoiDung);
         return chuyenSangDTO(updatedNguoiDung);
+    }
+
+    @Override
+    public NguoiDungDTO capNhatCaiDatRiengTu(String token, PrivacySettingsRequest request) {
+        NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+
+        if (request.getEmailCongKhai() != null) {
+            nguoiDung.setEmailCongKhai(request.getEmailCongKhai());
+        }
+        if (request.getSdtCongKhai() != null) {
+            nguoiDung.setSdtCongKhai(request.getSdtCongKhai());
+        }
+        if (request.getNgaySinhCongKhai() != null) {
+            nguoiDung.setNgaySinhCongKhai(request.getNgaySinhCongKhai());
+        }
+        if (request.getGioiTinhCongKhai() != null) {
+            nguoiDung.setGioiTinhCongKhai(request.getGioiTinhCongKhai());
+        }
+
+        NguoiDung nguoiDungDaLuu = nguoiDungRepository.save(nguoiDung);
+        return chuyenSangDTO(nguoiDungDaLuu);
     }
 }

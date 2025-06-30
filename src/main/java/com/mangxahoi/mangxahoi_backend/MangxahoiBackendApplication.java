@@ -9,5 +9,4 @@ public class MangxahoiBackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(MangxahoiBackendApplication.class, args);
 	}
-
 }

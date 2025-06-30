@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -101,6 +102,18 @@ public class NguoiDung {
 
     @Enumerated(EnumType.STRING)
     private VaiTro vaiTro;
+
+    @ColumnDefault("true")
+    private Boolean emailCongKhai = true;
+
+    @ColumnDefault("true")
+    private Boolean sdtCongKhai = true;
+
+    @ColumnDefault("true")
+    private Boolean ngaySinhCongKhai = true;
+
+    @ColumnDefault("true")
+    private Boolean gioiTinhCongKhai = true;
 
     @OneToMany(mappedBy = "nguoiDung", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BaiViet> baiViets;

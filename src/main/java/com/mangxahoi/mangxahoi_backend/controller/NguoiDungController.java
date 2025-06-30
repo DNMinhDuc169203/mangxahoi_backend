@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungAnhDTO;
+import com.mangxahoi.mangxahoi_backend.dto.request.PrivacySettingsRequest;
 
 @RestController
 @RequestMapping("/api/nguoi-dung")
@@ -339,6 +340,21 @@ public class NguoiDungController {
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("message", "Lỗi khi thay đổi mức riêng tư: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/privacy-settings")
+    public ResponseEntity<Object> capNhatCaiDatRiengTu(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody PrivacySettingsRequest request) {
+        try {
+            String token = authorization.substring(7);
+            NguoiDungDTO updatedNguoiDung = nguoiDungService.capNhatCaiDatRiengTu(token, request);
+            return ResponseEntity.ok(updatedNguoiDung);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Lỗi khi cập nhật cài đặt riêng tư: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
