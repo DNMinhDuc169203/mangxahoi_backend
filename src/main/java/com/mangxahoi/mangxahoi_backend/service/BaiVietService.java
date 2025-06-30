@@ -11,9 +11,9 @@ import java.util.Optional;
 public interface BaiVietService {
     BaiVietDTO taoBaiViet(Integer idNguoiDung, BaiVietDTO baiVietDTO, List<MultipartFile> media);
     
-    BaiVietDTO capNhatBaiViet(Integer id, BaiVietDTO baiVietDTO);
+    BaiVietDTO capNhatBaiViet(Integer id, BaiVietDTO baiVietDTO, Integer idNguoiDung);
     
-    void xoaBaiViet(Integer id);
+    void xoaBaiViet(Integer id, Integer idNguoiDung);
     
     Optional<BaiVietDTO> timTheoId(Integer id, Integer idNguoiDungHienTai);
     

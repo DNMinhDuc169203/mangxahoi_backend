@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.mangxahoi.mangxahoi_backend.dto.NguoiDungAnhDTO;
 
 @RestController
 @RequestMapping("/api/nguoi-dung")
@@ -273,27 +274,44 @@ public class NguoiDungController {
     }
 
     @GetMapping("/anh")
-    public ResponseEntity<List<NguoiDungAnh>> layDanhSachAnh(
+    public ResponseEntity<List<NguoiDungAnhDTO>> layDanhSachAnh(
             @RequestHeader("Authorization") String authorization) {
         try {
             String token = authorization.substring(7);
             NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
             List<NguoiDungAnh> anhDaiDiens = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
-            return ResponseEntity.ok(anhDaiDiens);
+
+            List<NguoiDungAnhDTO> dtos = anhDaiDiens.stream().map(anh -> {
+                NguoiDungAnhDTO dto = new NguoiDungAnhDTO();
+                dto.setId(anh.getId());
+                dto.setUrl(anh.getUrl());
+                dto.setLaAnhChinh(anh.getLaAnhChinh());
+                dto.setNgayTao(anh.getNgayTao());
+                return dto;
+            }).collect(java.util.stream.Collectors.toList());
+
+            return ResponseEntity.ok(dtos);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
     @GetMapping("/anh/chinh")
-    public ResponseEntity<NguoiDungAnh> layAnhChinh(
+    public ResponseEntity<NguoiDungAnhDTO> layAnhChinh(
              @RequestHeader("Authorization") String authorization) {
         try {
             String token = authorization.substring(7);
             NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
-            Optional<NguoiDungAnh> anhChinh = nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true);
-            return anhChinh.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+            Optional<NguoiDungAnh> anhChinhOpt = nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true);
+
+            return anhChinhOpt.map(anhChinh -> {
+                NguoiDungAnhDTO dto = new NguoiDungAnhDTO();
+                dto.setId(anhChinh.getId());
+                dto.setUrl(anhChinh.getUrl());
+                dto.setLaAnhChinh(anhChinh.getLaAnhChinh());
+                dto.setNgayTao(anhChinh.getNgayTao());
+                return ResponseEntity.ok(dto);
+            }).orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
