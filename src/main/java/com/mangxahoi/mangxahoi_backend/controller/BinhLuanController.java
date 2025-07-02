@@ -193,36 +193,27 @@ public class BinhLuanController {
     }
     
     /**
-     * Lấy danh sách bình luận của bài viết
-     * 
-     * @param idBaiViet ID của bài viết
-     * @param page Số trang
-     * @param size Số lượng mỗi trang
-     * @return Danh sách bình luận
+     * Lấy danh sách bình luận của bài viết (yêu cầu token)
      */
     @GetMapping("/bai-viet/{idBaiViet}")
     public ResponseEntity<Map<String, Object>> layBinhLuanTheoBaiViet(
             @PathVariable Integer idBaiViet,
+            @RequestHeader("Authorization") String authorization,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+        NguoiDung nguoiDung = getUserFromToken(authorization);
         try {
             // Kiểm tra bài viết tồn tại
             BaiViet baiViet = baiVietRepository.findById(idBaiViet)
                     .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
-            
-            // Lấy danh sách bình luận gốc (không có bình luận cha)
             Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").descending());
             Page<BinhLuanDTO> binhLuanPage = binhLuanService.layBinhLuanGocTheoBaiViet(idBaiViet, pageable);
-            
             Map<String, Object> response = new HashMap<>();
             response.put("binhLuan", binhLuanPage.getContent());
             response.put("trangHienTai", binhLuanPage.getNumber());
             response.put("tongSoTrang", binhLuanPage.getTotalPages());
             response.put("tongSoBinhLuan", binhLuanPage.getTotalElements());
-            
             return ResponseEntity.ok(response);
-            
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
@@ -231,36 +222,27 @@ public class BinhLuanController {
     }
     
     /**
-     * Lấy danh sách bình luận phản hồi của một bình luận
-     * 
-     * @param idBinhLuanCha ID của bình luận cha
-     * @param page Số trang
-     * @param size Số lượng mỗi trang
-     * @return Danh sách bình luận phản hồi
+     * Lấy danh sách bình luận phản hồi của một bình luận (yêu cầu token)
      */
     @GetMapping("/{idBinhLuanCha}/phan-hoi")
     public ResponseEntity<Map<String, Object>> layBinhLuanPhanHoi(
             @PathVariable Integer idBinhLuanCha,
+            @RequestHeader("Authorization") String authorization,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+        NguoiDung nguoiDung = getUserFromToken(authorization);
         try {
             // Kiểm tra bình luận cha tồn tại
             BinhLuan binhLuanCha = binhLuanRepository.findById(idBinhLuanCha)
                     .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", idBinhLuanCha));
-            
-            // Lấy danh sách bình luận phản hồi
             Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").ascending());
             Page<BinhLuanDTO> binhLuanPage = binhLuanService.layBinhLuanPhanHoi(idBinhLuanCha, pageable);
-            
             Map<String, Object> response = new HashMap<>();
             response.put("binhLuan", binhLuanPage.getContent());
             response.put("trangHienTai", binhLuanPage.getNumber());
             response.put("tongSoTrang", binhLuanPage.getTotalPages());
             response.put("tongSoBinhLuan", binhLuanPage.getTotalElements());
-            
             return ResponseEntity.ok(response);
-            
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
