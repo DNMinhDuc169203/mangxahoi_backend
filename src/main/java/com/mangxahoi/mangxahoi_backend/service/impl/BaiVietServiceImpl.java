@@ -11,6 +11,7 @@ import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +31,7 @@ public class BaiVietServiceImpl implements BaiVietService {
     private final BaiVietHashtagRepository baiVietHashtagRepository;
     private final LuotThichBaiVietRepository luotThichBaiVietRepository;
     private final CloudinaryService cloudinaryService;
+    private final KetBanRepository ketBanRepository;
 
     @Override
     @Transactional
@@ -384,6 +386,53 @@ public class BaiVietServiceImpl implements BaiVietService {
         
         // Nếu chưa thích hoặc đã bỏ thích rồi, không làm gì cả
         return false;
+    }
+
+    @Override
+    public Page<BaiVietDTO> layNewsfeedTongHop(Integer idNguoiDung, Pageable pageable) {
+        // Lấy user
+        NguoiDung user = nguoiDungRepository.findById(idNguoiDung)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", idNguoiDung));
+
+        // Lấy danh sách bạn bè
+        List<KetBan> friends = ketBanRepository.findAllFriends(user);
+        List<Integer> friendIds = new java.util.ArrayList<>();
+        for (KetBan k : friends) {
+            if (k.getNguoiGui().getId().equals(idNguoiDung)) {
+                friendIds.add(k.getNguoiNhan().getId());
+            } else {
+                friendIds.add(k.getNguoiGui().getId());
+            }
+        }
+
+        // Lấy bài viết công khai
+        List<BaiViet> congKhai = baiVietRepository.findAllPublicPosts(PageRequest.of(0, 100)).getContent();
+        // Lấy bài viết bạn bè (che_do_rieng_tu = 'ban_be' và id_nguoi_dung in friendIds)
+        List<BaiViet> banBe = friendIds.isEmpty() ? new java.util.ArrayList<>() :
+            baiVietRepository.findAllByNguoiDungIdInAndCheDoRiengTu(friendIds, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet.ban_be);
+        // Lấy bài viết của chính user
+        List<BaiViet> cuaToi = baiVietRepository.findByNguoiDung(user, PageRequest.of(0, 100)).getContent();
+        // Lấy bài viết xu hướng
+        List<BaiViet> xuHuong = baiVietRepository.findTrendingPosts(PageRequest.of(0, 100)).getContent();
+
+        // Gộp, loại trùng, sắp xếp
+        java.util.Set<BaiViet> all = new java.util.HashSet<>();
+        all.addAll(congKhai);
+        all.addAll(banBe);
+        all.addAll(cuaToi);
+        all.addAll(xuHuong);
+        java.util.List<BaiViet> sorted = all.stream()
+            .sorted(java.util.Comparator.comparing(BaiViet::getNgayTao).reversed())
+            .toList();
+
+        // Phân trang thủ công
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), sorted.size());
+        java.util.List<BaiVietDTO> pageContent = sorted.subList(start, end).stream()
+            .map(this::convertToDTO)
+            .toList();
+
+        return new org.springframework.data.domain.PageImpl<>(pageContent, pageable, sorted.size());
     }
 
     /**

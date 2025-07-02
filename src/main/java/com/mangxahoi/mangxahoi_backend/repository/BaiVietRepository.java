@@ -18,12 +18,15 @@ public interface BaiVietRepository extends JpaRepository<BaiViet, Integer> {
     
     Page<BaiViet> findByNguoiDung(NguoiDung nguoiDung, Pageable pageable);
     
-    @Query("SELECT b FROM BaiViet b WHERE b.cheDoRiengTu = 'CONG_KHAI' ORDER BY b.ngayTao DESC")
+    @Query("SELECT b FROM BaiViet b WHERE b.cheDoRiengTu = 'cong_khai' ORDER BY b.ngayTao DESC")
     Page<BaiViet> findAllPublicPosts(Pageable pageable);
     
-    @Query("SELECT b FROM BaiViet b WHERE b.dangXuHuong = true AND b.cheDoRiengTu = 'CONG_KHAI' ORDER BY b.soLuotThich DESC, b.soLuotBinhLuan DESC")
+    @Query("SELECT b FROM BaiViet b WHERE b.dangXuHuong = true AND b.cheDoRiengTu = 'cong_khai' ORDER BY b.soLuotThich DESC, b.soLuotBinhLuan DESC")
     Page<BaiViet> findTrendingPosts(Pageable pageable);
     
-    @Query("SELECT b FROM BaiViet b JOIN b.hashtags h WHERE h.ten = :tenHashtag AND b.cheDoRiengTu = 'CONG_KHAI'")
+    @Query("SELECT b FROM BaiViet b JOIN b.hashtags h WHERE h.ten = :tenHashtag AND b.cheDoRiengTu = 'cong_khai'")
     Page<BaiViet> findByHashtag(@Param("tenHashtag") String tenHashtag, Pageable pageable);
-} 
+
+    @Query("SELECT b FROM BaiViet b WHERE b.nguoiDung.id IN :friendIds AND b.cheDoRiengTu = 'ban_be' ORDER BY b.ngayTao DESC")
+    List<BaiViet> findAllByNguoiDungIdInAndCheDoRiengTu(@Param("friendIds") List<Integer> friendIds, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet cheDoRiengTu);
+}

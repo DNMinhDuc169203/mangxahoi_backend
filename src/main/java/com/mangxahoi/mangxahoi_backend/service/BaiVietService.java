@@ -28,4 +28,9 @@ public interface BaiVietService {
     boolean thichBaiViet(Integer idBaiViet, Integer idNguoiDung);
     
     boolean boThichBaiViet(Integer idBaiViet, Integer idNguoiDung);
+    
+    /**
+     * Lấy newsfeed tổng hợp cho người dùng (giống Facebook)
+     */
+    Page<BaiVietDTO> layNewsfeedTongHop(Integer idNguoiDung, Pageable pageable);
 } 

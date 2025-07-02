@@ -378,4 +378,42 @@ public class BaiVietController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+    
+    /**
+     * Lấy newsfeed tổng hợp (giống Facebook)
+     */
+    @GetMapping("/newsfeed")
+    public ResponseEntity<Map<String, Object>> layNewsfeedTongHop(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        NguoiDung user = getUserFromToken(authorization);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").descending());
+        Page<BaiVietDTO> newsfeed = baiVietService.layNewsfeedTongHop(user.getId(), pageable);
+        Map<String, Object> response = new HashMap<>();
+        response.put("baiViet", newsfeed.getContent());
+        response.put("trangHienTai", newsfeed.getNumber());
+        response.put("tongSoTrang", newsfeed.getTotalPages());
+        response.put("tongSoBaiViet", newsfeed.getTotalElements());
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Lấy danh sách bài viết của chính mình (quản lý)
+     */
+    @GetMapping("/quan-ly")
+    public ResponseEntity<Map<String, Object>> layBaiVietCuaChinhMinh(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        NguoiDung user = getUserFromToken(authorization);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").descending());
+        Page<BaiVietDTO> baiVietPage = baiVietService.timBaiVietCuaNguoiDung(user.getId(), user.getId(), pageable);
+        Map<String, Object> response = new HashMap<>();
+        response.put("baiViet", baiVietPage.getContent());
+        response.put("trangHienTai", baiVietPage.getNumber());
+        response.put("tongSoTrang", baiVietPage.getTotalPages());
+        response.put("tongSoBaiViet", baiVietPage.getTotalElements());
+        return ResponseEntity.ok(response);
+    }
 } 
