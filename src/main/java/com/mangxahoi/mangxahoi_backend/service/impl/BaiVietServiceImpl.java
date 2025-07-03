@@ -429,7 +429,14 @@ public class BaiVietServiceImpl implements BaiVietService {
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), sorted.size());
         java.util.List<BaiVietDTO> pageContent = sorted.subList(start, end).stream()
-            .map(this::convertToDTO)
+            .map(baiViet -> {
+                BaiVietDTO dto = convertToDTO(baiViet);
+                boolean daThich = luotThichBaiVietRepository
+                    .findByNguoiDungIdAndBaiVietIdAndTrangThaiThichTrue(idNguoiDung, baiViet.getId())
+                    .isPresent();
+                dto.setDaThich(daThich);
+                return dto;
+            })
             .toList();
 
         return new org.springframework.data.domain.PageImpl<>(pageContent, pageable, sorted.size());
