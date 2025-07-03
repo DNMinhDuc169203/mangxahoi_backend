@@ -1,6 +1,7 @@
 package com.mangxahoi.mangxahoi_backend.service;
 
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
+import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
 import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +27,7 @@ public interface KetBanService {
     
     Page<NguoiDungDTO> danhSachLoiMoiKetBan(Integer idNguoiDung, Pageable pageable);
     
-    Page<NguoiDungDTO> danhSachLoiMoiDaGui(Integer idNguoiDung, Pageable pageable);
+    Page<LoiMoiKetBanDaGuiDTO> danhSachLoiMoiDaGui(Integer idNguoiDung, Pageable pageable);
     
     Page<NguoiDungDTO> danhSachNguoiDungBiChan(Integer idNguoiDung, Pageable pageable);
     
