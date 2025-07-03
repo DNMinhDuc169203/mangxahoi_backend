@@ -85,4 +85,6 @@ public interface NguoiDungService {
      * @return NguoiDungDTO đã được cập nhật
      */
     NguoiDungDTO capNhatCaiDatRiengTu(String token, PrivacySettingsRequest request);
+
+    Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable);
 } 

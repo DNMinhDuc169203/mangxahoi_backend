@@ -150,8 +150,14 @@ public class NguoiDungController {
     }
 
     @GetMapping("/tim-kiem")
-    public ResponseEntity<Page<NguoiDungDTO>> timTheoHoTen(@RequestParam String hoTen, Pageable pageable) {
-        Page<NguoiDungDTO> nguoiDungs = nguoiDungService.timTheoHoTen(hoTen, pageable);
+    public ResponseEntity<Page<NguoiDungDTO>> timKiemNguoiDung(@RequestParam String tuKhoa, Pageable pageable) {
+        Page<NguoiDungDTO> nguoiDungs;
+        // Nếu là số điện thoại (chỉ chứa số, có thể có dấu + ở đầu)
+        if (tuKhoa.matches("^\\+?\\d+$")) {
+            nguoiDungs = nguoiDungService.timTheoSoDienThoaiGanDung(tuKhoa, pageable);
+        } else {
+            nguoiDungs = nguoiDungService.timTheoHoTen(tuKhoa, pageable);
+        }
         return ResponseEntity.ok(nguoiDungs);
     }
 

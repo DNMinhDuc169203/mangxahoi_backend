@@ -576,4 +576,10 @@ public class NguoiDungServiceImpl implements NguoiDungService {
         NguoiDung nguoiDungDaLuu = nguoiDungRepository.save(nguoiDung);
         return chuyenSangDTO(nguoiDungDaLuu);
     }
+
+    @Override
+    public Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable) {
+        Page<NguoiDung> page = nguoiDungRepository.findBySoDienThoaiContaining(soDienThoai, pageable);
+        return page.map(this::chuyenSangDTO);
+    }
 }

@@ -26,4 +26,6 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
      */
     @Query("SELECT n FROM NguoiDung n WHERE n.hoTen LIKE %:hoTen% AND n.biXoaMem = false")
     Page<NguoiDung> findByHoTenContainingIgnoreCase(@Param("hoTen") String hoTen, Pageable pageable);
+
+    Page<NguoiDung> findBySoDienThoaiContaining(String soDienThoai, Pageable pageable);
 } 
