@@ -39,19 +39,21 @@ public interface BinhLuanService {
      * Lấy danh sách bình luận gốc theo bài viết
      * 
      * @param idBaiViet ID của bài viết
+     * @param idNguoiDungHienTai ID của người dùng hiện tại
      * @param pageable Thông tin phân trang
      * @return Danh sách bình luận gốc
      */
-    Page<BinhLuanDTO> layBinhLuanGocTheoBaiViet(Integer idBaiViet, Pageable pageable);
+    Page<BinhLuanDTO> layBinhLuanGocTheoBaiViet(Integer idBaiViet, Integer idNguoiDungHienTai, Pageable pageable);
     
     /**
      * Lấy danh sách bình luận phản hồi của một bình luận
      * 
      * @param idBinhLuanCha ID của bình luận cha
+     * @param idNguoiDungHienTai ID của người dùng hiện tại
      * @param pageable Thông tin phân trang
      * @return Danh sách bình luận phản hồi
      */
-    Page<BinhLuanDTO> layBinhLuanPhanHoi(Integer idBinhLuanCha, Pageable pageable);
+    Page<BinhLuanDTO> layBinhLuanPhanHoi(Integer idBinhLuanCha, Integer idNguoiDungHienTai, Pageable pageable);
     
     /**
      * Thích bình luận

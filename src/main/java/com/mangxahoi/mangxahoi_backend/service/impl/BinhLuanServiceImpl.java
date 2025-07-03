@@ -128,7 +128,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
     }
 
     @Override
-    public Page<BinhLuanDTO> layBinhLuanGocTheoBaiViet(Integer idBaiViet, Pageable pageable) {
+    public Page<BinhLuanDTO> layBinhLuanGocTheoBaiViet(Integer idBaiViet, Integer idNguoiDungHienTai, Pageable pageable) {
         // Tìm bài viết
         BaiViet baiViet = baiVietRepository.findById(idBaiViet)
                 .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
@@ -139,12 +139,9 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         // Chuyển đổi sang DTO
         List<BinhLuanDTO> binhLuanDTOs = binhLuanPage.getContent().stream()
                 .map(binhLuan -> {
-                    BinhLuanDTO dto = convertToDTO(binhLuan, null);
-                    
-                    // Lấy số lượng phản hồi
+                    BinhLuanDTO dto = convertToDTO(binhLuan, idNguoiDungHienTai);
                     long soLuotPhanHoi = binhLuanRepository.countByBinhLuanCha(binhLuan);
                     dto.setSoLuotPhanHoi((int) soLuotPhanHoi);
-                    
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -153,7 +150,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
     }
 
     @Override
-    public Page<BinhLuanDTO> layBinhLuanPhanHoi(Integer idBinhLuanCha, Pageable pageable) {
+    public Page<BinhLuanDTO> layBinhLuanPhanHoi(Integer idBinhLuanCha, Integer idNguoiDungHienTai, Pageable pageable) {
         // Tìm bình luận cha
         BinhLuan binhLuanCha = binhLuanRepository.findById(idBinhLuanCha)
                 .orElseThrow(() -> new ResourceNotFoundException("Bình luận cha", "id", idBinhLuanCha));
@@ -163,7 +160,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         
         // Chuyển đổi sang DTO
         List<BinhLuanDTO> binhLuanDTOs = binhLuanPage.getContent().stream()
-                .map(binhLuan -> convertToDTO(binhLuan, null))
+                .map(binhLuan -> convertToDTO(binhLuan, idNguoiDungHienTai))
                 .collect(Collectors.toList());
         
         return new PageImpl<>(binhLuanDTOs, pageable, binhLuanPage.getTotalElements());

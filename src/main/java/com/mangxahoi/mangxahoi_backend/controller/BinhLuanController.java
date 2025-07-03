@@ -207,7 +207,7 @@ public class BinhLuanController {
             BaiViet baiViet = baiVietRepository.findById(idBaiViet)
                     .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
             Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").descending());
-            Page<BinhLuanDTO> binhLuanPage = binhLuanService.layBinhLuanGocTheoBaiViet(idBaiViet, pageable);
+            Page<BinhLuanDTO> binhLuanPage = binhLuanService.layBinhLuanGocTheoBaiViet(idBaiViet, nguoiDung.getId(), pageable);
             Map<String, Object> response = new HashMap<>();
             response.put("binhLuan", binhLuanPage.getContent());
             response.put("trangHienTai", binhLuanPage.getNumber());
@@ -236,7 +236,7 @@ public class BinhLuanController {
             BinhLuan binhLuanCha = binhLuanRepository.findById(idBinhLuanCha)
                     .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", idBinhLuanCha));
             Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").ascending());
-            Page<BinhLuanDTO> binhLuanPage = binhLuanService.layBinhLuanPhanHoi(idBinhLuanCha, pageable);
+            Page<BinhLuanDTO> binhLuanPage = binhLuanService.layBinhLuanPhanHoi(idBinhLuanCha, nguoiDung.getId(), pageable);
             Map<String, Object> response = new HashMap<>();
             response.put("binhLuan", binhLuanPage.getContent());
             response.put("trangHienTai", binhLuanPage.getNumber());
