@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
 
 import java.util.Map;
 
@@ -101,7 +102,7 @@ public class KetBanController {
     }
 
     @GetMapping("/danh-sach/loi-moi-gui")
-    public ResponseEntity<Page<com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO>> danhSachLoiMoiGui(
+    public ResponseEntity<Page<LoiMoiKetBanDaGuiDTO>> danhSachLoiMoiGui(
             @RequestHeader("Authorization") String authHeader, Pageable pageable) {
         Integer idNguoiDung = getUserIdFromToken(authHeader);
         return ResponseEntity.ok(ketBanService.danhSachLoiMoiDaGui(idNguoiDung, pageable));
