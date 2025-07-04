@@ -4,6 +4,7 @@ import com.mangxahoi.mangxahoi_backend.dto.BaiVietDTO;
 import com.mangxahoi.mangxahoi_backend.entity.*;
 import com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiMedia;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.*;
 import com.mangxahoi.mangxahoi_backend.service.BaiVietService;
@@ -32,6 +33,7 @@ public class BaiVietServiceImpl implements BaiVietService {
     private final LuotThichBaiVietRepository luotThichBaiVietRepository;
     private final CloudinaryService cloudinaryService;
     private final KetBanRepository ketBanRepository;
+    private final ThongBaoRepository thongBaoRepository;
 
     @Override
     @Transactional
@@ -331,11 +333,19 @@ public class BaiVietServiceImpl implements BaiVietService {
                 luotThich.setTrangThaiThich(true);
                 luotThich.setNgayHuyThich(null);
                 luotThichBaiVietRepository.save(luotThich);
-                
-                // Tăng số lượt thích của bài viết
                 baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
                 baiVietRepository.save(baiViet);
-                
+                // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÀI VIẾT
+                if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+                    ThongBao thongBao = ThongBao.builder()
+                        .nguoiNhan(baiViet.getNguoiDung())
+                        .loai(LoaiThongBao.tuong_tac.name())
+                        .tieuDe("Bài viết của bạn vừa được thích!")
+                        .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bài viết của bạn.")
+                        .mucDoUuTien("trung_binh")
+                        .build();
+                    thongBaoRepository.save(thongBao);
+                }
                 return true;
             }
             // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -351,7 +361,17 @@ public class BaiVietServiceImpl implements BaiVietService {
             // Tăng số lượt thích của bài viết
             baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
             baiVietRepository.save(baiViet);
-            
+            // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÀI VIẾT
+            if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+                ThongBao thongBao = ThongBao.builder()
+                    .nguoiNhan(baiViet.getNguoiDung())
+                    .loai(LoaiThongBao.tuong_tac.name())
+                    .tieuDe("Bài viết của bạn vừa được thích!")
+                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bài viết của bạn.")
+                    .mucDoUuTien("trung_binh")
+                    .build();
+                thongBaoRepository.save(thongBao);
+            }
             return true;
         }
     }
@@ -380,7 +400,12 @@ public class BaiVietServiceImpl implements BaiVietService {
             // Giảm số lượt thích của bài viết
             baiViet.setSoLuotThich(Math.max(0, baiViet.getSoLuotThich() - 1));
             baiVietRepository.save(baiViet);
-            
+            // XÓA THÔNG BÁO TƯƠNG ỨNG
+            thongBaoRepository.findByNguoiNhan(baiViet.getNguoiDung()).stream()
+                .filter(tb -> tb.getLoai().equals(LoaiThongBao.tuong_tac.name()) &&
+                        tb.getNoiDung() != null &&
+                        tb.getNoiDung().contains("Người dùng " + nguoiDung.getHoTen() + " vừa thích bài viết của bạn."))
+                .forEach(tb -> thongBaoRepository.delete(tb));
             return true;
         }
         

@@ -6,11 +6,13 @@ import com.mangxahoi.mangxahoi_backend.entity.BinhLuan;
 import com.mangxahoi.mangxahoi_backend.entity.LuotThichBinhLuan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
+import com.mangxahoi.mangxahoi_backend.entity.ThongBao;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
 import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.LuotThichBinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
+import com.mangxahoi.mangxahoi_backend.repository.ThongBaoRepository;
 import com.mangxahoi.mangxahoi_backend.service.BinhLuanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
+
 @Service
 @RequiredArgsConstructor
 public class BinhLuanServiceImpl implements BinhLuanService {
@@ -34,6 +38,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
     private final BaiVietRepository baiVietRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final LuotThichBinhLuanRepository luotThichBinhLuanRepository;
+    private final ThongBaoRepository thongBaoRepository;
 
     @Override
     @Transactional
@@ -71,6 +76,33 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         // Tăng số lượt bình luận của bài viết
         baiViet.setSoLuotBinhLuan(baiViet.getSoLuotBinhLuan() + 1);
         baiVietRepository.save(baiViet);
+        
+        // GỬI THÔNG BÁO TỰ ĐỘNG
+        if (binhLuanCha == null) {
+            // Bình luận gốc: gửi cho chủ bài viết nếu không phải là người bình luận
+            if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+                ThongBao thongBao = ThongBao.builder()
+                    .nguoiNhan(baiViet.getNguoiDung())
+                    .loai(LoaiThongBao.tuong_tac.name())
+                    .tieuDe("Bài viết của bạn vừa có bình luận mới!")
+                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa bình luận vào bài viết của bạn.")
+                    .mucDoUuTien("trung_binh")
+                    .build();
+                thongBaoRepository.save(thongBao);
+            }
+        } else {
+            // Trả lời bình luận: gửi cho chủ bình luận cha nếu không phải là người bình luận
+            if (!binhLuanCha.getNguoiDung().getId().equals(idNguoiDung)) {
+                ThongBao thongBao = ThongBao.builder()
+                    .nguoiNhan(binhLuanCha.getNguoiDung())
+                    .loai(LoaiThongBao.tuong_tac.name())
+                    .tieuDe("Bình luận của bạn vừa có phản hồi mới!")
+                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa trả lời bình luận của bạn.")
+                    .mucDoUuTien("trung_binh")
+                    .build();
+                thongBaoRepository.save(thongBao);
+            }
+        }
         
         // Chuyển đổi sang DTO và trả về
         return convertToDTO(savedBinhLuan, idNguoiDung);
@@ -187,6 +219,17 @@ public class BinhLuanServiceImpl implements BinhLuanService {
                 luotThich.setTrangThaiThich(true);
                 luotThich.setNgayHuyThich(null);
                 luotThichBinhLuanRepository.save(luotThich);
+                // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÌNH LUẬN
+                if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
+                    ThongBao thongBao = ThongBao.builder()
+                        .nguoiNhan(binhLuan.getNguoiDung())
+                        .loai(LoaiThongBao.tuong_tac.name())
+                        .tieuDe("Bình luận của bạn vừa được thích!")
+                        .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bình luận của bạn.")
+                        .mucDoUuTien("trung_binh")
+                        .build();
+                    thongBaoRepository.save(thongBao);
+                }
                 return true;
             }
             // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -198,6 +241,17 @@ public class BinhLuanServiceImpl implements BinhLuanService {
             luotThich.setBinhLuan(binhLuan);
             luotThich.setTrangThaiThich(true);
             luotThichBinhLuanRepository.save(luotThich);
+            // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÌNH LUẬN
+            if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
+                ThongBao thongBao = ThongBao.builder()
+                    .nguoiNhan(binhLuan.getNguoiDung())
+                    .loai(LoaiThongBao.tuong_tac.name())
+                    .tieuDe("Bình luận của bạn vừa được thích!")
+                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bình luận của bạn.")
+                    .mucDoUuTien("trung_binh")
+                    .build();
+                thongBaoRepository.save(thongBao);
+            }
             return true;
         }
     }
@@ -222,6 +276,12 @@ public class BinhLuanServiceImpl implements BinhLuanService {
             luotThich.setTrangThaiThich(false);
             luotThich.setNgayHuyThich(LocalDateTime.now());
             luotThichBinhLuanRepository.save(luotThich);
+            // XÓA THÔNG BÁO TƯƠNG ỨNG
+            thongBaoRepository.findByNguoiNhan(binhLuan.getNguoiDung()).stream()
+                .filter(tb -> tb.getLoai().equals(LoaiThongBao.tuong_tac.name()) &&
+                        tb.getNoiDung() != null &&
+                        tb.getNoiDung().contains("Người dùng " + nguoiDung.getHoTen() + " vừa thích bình luận của bạn."))
+                .forEach(tb -> thongBaoRepository.delete(tb));
             return true;
         }
         

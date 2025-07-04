@@ -5,12 +5,15 @@ import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
 import com.mangxahoi.mangxahoi_backend.entity.KetBan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
+import com.mangxahoi.mangxahoi_backend.entity.ThongBao;
 import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.exception.ValidationException;
 import com.mangxahoi.mangxahoi_backend.repository.KetBanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungAnhRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
+import com.mangxahoi.mangxahoi_backend.repository.ThongBaoRepository;
 import com.mangxahoi.mangxahoi_backend.service.KetBanService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ public class KetBanServiceImpl implements KetBanService {
     private final NguoiDungRepository nguoiDungRepository;
     private final NguoiDungAnhRepository nguoiDungAnhRepository;
     private final TokenUtil tokenUtil;
+    private final ThongBaoRepository thongBaoRepository;
 
     private NguoiDung layNguoiDungTuToken(String token) {
         return tokenUtil.layNguoiDungTuToken(token);
@@ -57,6 +61,15 @@ public class KetBanServiceImpl implements KetBanService {
         ketBan.setNguoiNhan(nguoiNhan);
         ketBan.setTrangThai(TrangThaiKetBan.cho_chap_nhan);
         ketBanRepository.save(ketBan);
+        // GỬI THÔNG BÁO TỰ ĐỘNG CHO NGƯỜI NHẬN LỜI MỜI KẾT BẠN
+        ThongBao thongBao = ThongBao.builder()
+            .nguoiNhan(nguoiNhan)
+            .loai(LoaiThongBao.moi_ket_ban.name())
+            .tieuDe("Bạn có lời mời kết bạn mới!")
+            .noiDung("Người dùng " + nguoiGui.getHoTen() + " vừa gửi lời mời kết bạn cho bạn.")
+            .mucDoUuTien("trung_binh")
+            .build();
+        thongBaoRepository.save(thongBao);
         return true;
     }
 
