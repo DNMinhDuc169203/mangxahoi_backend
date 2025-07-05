@@ -1,6 +1,7 @@
 package com.mangxahoi.mangxahoi_backend.controller;
 
 import com.mangxahoi.mangxahoi_backend.service.KetBanService;
+import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class KetBanController {
 
     private final KetBanService ketBanService;
+    private final ThongBaoService thongBaoService;
     private final TokenUtil tokenUtil;
 
     private Integer getUserIdFromToken(String authHeader) {
@@ -32,7 +34,13 @@ public class KetBanController {
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Integer idNguoiNhan) {
         Integer idNguoiGui = getUserIdFromToken(authHeader);
-        ketBanService.guiLoiMoiKetBan(idNguoiGui, idNguoiNhan);
+        Integer idKetBan = ketBanService.guiLoiMoiKetBan(idNguoiGui, idNguoiNhan);
+        
+        // Gửi thông báo cho người nhận
+        if (idKetBan != null) {
+            thongBaoService.guiThongBaoLoiMoiKetBan(idNguoiGui, idKetBan);
+        }
+        
         return ResponseEntity.ok(Map.of("message", "Gửi lời mời kết bạn thành công."));
     }
 

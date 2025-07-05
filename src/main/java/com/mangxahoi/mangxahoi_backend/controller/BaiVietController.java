@@ -6,6 +6,7 @@ import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.service.BaiVietService;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
+import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public class BaiVietController {
     private final NguoiDungRepository nguoiDungRepository;
     private final CloudinaryService cloudinaryService;
     private final TokenUtil tokenUtil;
+    private final ThongBaoService thongBaoService;
 
     private NguoiDung getUserFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -330,6 +332,11 @@ public class BaiVietController {
         try {
             NguoiDung nguoiDung = getUserFromToken(authorization);
             boolean result = baiVietService.thichBaiViet(idBaiViet, nguoiDung.getId());
+            
+            // Gửi thông báo nếu thích thành công
+            if (result) {
+                thongBaoService.guiThongBaoThichBaiViet(nguoiDung.getId(), idBaiViet);
+            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", result);

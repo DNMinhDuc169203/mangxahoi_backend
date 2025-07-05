@@ -335,17 +335,7 @@ public class BaiVietServiceImpl implements BaiVietService {
                 luotThichBaiVietRepository.save(luotThich);
                 baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
                 baiVietRepository.save(baiViet);
-                // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÀI VIẾT
-                if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
-                    ThongBao thongBao = ThongBao.builder()
-                        .nguoiNhan(baiViet.getNguoiDung())
-                        .loai(LoaiThongBao.tuong_tac.name())
-                        .tieuDe("Bài viết của bạn vừa được thích!")
-                        .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bài viết của bạn.")
-                        .mucDoUuTien("trung_binh")
-                        .build();
-                    thongBaoRepository.save(thongBao);
-                }
+                // Đã bỏ logic gửi thông báo ở đây
                 return true;
             }
             // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -361,17 +351,7 @@ public class BaiVietServiceImpl implements BaiVietService {
             // Tăng số lượt thích của bài viết
             baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
             baiVietRepository.save(baiViet);
-            // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÀI VIẾT
-            if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
-                ThongBao thongBao = ThongBao.builder()
-                    .nguoiNhan(baiViet.getNguoiDung())
-                    .loai(LoaiThongBao.tuong_tac.name())
-                    .tieuDe("Bài viết của bạn vừa được thích!")
-                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bài viết của bạn.")
-                    .mucDoUuTien("trung_binh")
-                    .build();
-                thongBaoRepository.save(thongBao);
-            }
+            // Đã bỏ logic gửi thông báo ở đây
             return true;
         }
     }
