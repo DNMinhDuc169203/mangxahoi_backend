@@ -46,7 +46,7 @@ public class KetBanServiceImpl implements KetBanService {
     
     @Override
     @Transactional
-    public boolean guiLoiMoiKetBan(Integer idNguoiGui, Integer idNguoiNhan) {
+    public Integer guiLoiMoiKetBan(Integer idNguoiGui, Integer idNguoiNhan) {
         if (idNguoiGui.equals(idNguoiNhan)) {
             throw new ValidationException("Bạn không thể tự kết bạn với chính mình");
         }
@@ -61,17 +61,9 @@ public class KetBanServiceImpl implements KetBanService {
         ketBan.setNguoiGui(nguoiGui);
         ketBan.setNguoiNhan(nguoiNhan);
         ketBan.setTrangThai(TrangThaiKetBan.cho_chap_nhan);
-        ketBanRepository.save(ketBan);
-        // GỬI THÔNG BÁO TỰ ĐỘNG CHO NGƯỜI NHẬN LỜI MỜI KẾT BẠN
-        ThongBao thongBao = ThongBao.builder()
-            .nguoiNhan(nguoiNhan)
-            .loai(LoaiThongBao.moi_ket_ban.name())
-            .tieuDe("Bạn có lời mời kết bạn mới!")
-            .noiDung("Người dùng " + nguoiGui.getHoTen() + " vừa gửi lời mời kết bạn cho bạn.")
-            .mucDoUuTien("trung_binh")
-            .build();
-        thongBaoRepository.save(thongBao);
-        return true;
+        ketBan = ketBanRepository.save(ketBan);
+        
+        return ketBan.getId();
     }
 
     @Override

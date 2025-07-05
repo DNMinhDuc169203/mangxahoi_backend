@@ -78,31 +78,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         baiVietRepository.save(baiViet);
         
         // GỬI THÔNG BÁO TỰ ĐỘNG
-        if (binhLuanCha == null) {
-            // Bình luận gốc: gửi cho chủ bài viết nếu không phải là người bình luận
-            if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
-                ThongBao thongBao = ThongBao.builder()
-                    .nguoiNhan(baiViet.getNguoiDung())
-                    .loai(LoaiThongBao.tuong_tac.name())
-                    .tieuDe("Bài viết của bạn vừa có bình luận mới!")
-                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa bình luận vào bài viết của bạn.")
-                    .mucDoUuTien("trung_binh")
-                    .build();
-                thongBaoRepository.save(thongBao);
-            }
-        } else {
-            // Trả lời bình luận: gửi cho chủ bình luận cha nếu không phải là người bình luận
-            if (!binhLuanCha.getNguoiDung().getId().equals(idNguoiDung)) {
-                ThongBao thongBao = ThongBao.builder()
-                    .nguoiNhan(binhLuanCha.getNguoiDung())
-                    .loai(LoaiThongBao.tuong_tac.name())
-                    .tieuDe("Bình luận của bạn vừa có phản hồi mới!")
-                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa trả lời bình luận của bạn.")
-                    .mucDoUuTien("trung_binh")
-                    .build();
-                thongBaoRepository.save(thongBao);
-            }
-        }
+        // Đã bỏ logic gửi thông báo ở đây
         
         // Chuyển đổi sang DTO và trả về
         return convertToDTO(savedBinhLuan, idNguoiDung);
@@ -222,17 +198,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
                 luotThich.setTrangThaiThich(true);
                 luotThich.setNgayHuyThich(null);
                 luotThichBinhLuanRepository.save(luotThich);
-                // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÌNH LUẬN
-                if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
-                    ThongBao thongBao = ThongBao.builder()
-                        .nguoiNhan(binhLuan.getNguoiDung())
-                        .loai(LoaiThongBao.tuong_tac.name())
-                        .tieuDe("Bình luận của bạn vừa được thích!")
-                        .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bình luận của bạn.")
-                        .mucDoUuTien("trung_binh")
-                        .build();
-                    thongBaoRepository.save(thongBao);
-                }
+                // Đã bỏ logic gửi thông báo ở đây
                 return true;
             }
             // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -244,17 +210,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
             luotThich.setBinhLuan(binhLuan);
             luotThich.setTrangThaiThich(true);
             luotThichBinhLuanRepository.save(luotThich);
-            // GỬI THÔNG BÁO TỰ ĐỘNG CHO CHỦ BÌNH LUẬN
-            if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
-                ThongBao thongBao = ThongBao.builder()
-                    .nguoiNhan(binhLuan.getNguoiDung())
-                    .loai(LoaiThongBao.tuong_tac.name())
-                    .tieuDe("Bình luận của bạn vừa được thích!")
-                    .noiDung("Người dùng " + nguoiDung.getHoTen() + " vừa thích bình luận của bạn.")
-                    .mucDoUuTien("trung_binh")
-                    .build();
-                thongBaoRepository.save(thongBao);
-            }
+            // Đã bỏ logic gửi thông báo ở đây
             return true;
         }
     }
