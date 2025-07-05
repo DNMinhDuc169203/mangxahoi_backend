@@ -137,8 +137,11 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         BinhLuan binhLuan = binhLuanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", id));
         
-        // Kiểm tra quyền xóa bình luận
-        if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
+        // Kiểm tra quyền xóa bình luận: cho phép người viết bình luận hoặc chủ bài viết
+        if (
+            !binhLuan.getNguoiDung().getId().equals(idNguoiDung) &&
+            !binhLuan.getBaiViet().getNguoiDung().getId().equals(idNguoiDung)
+        ) {
             return false;
         }
         

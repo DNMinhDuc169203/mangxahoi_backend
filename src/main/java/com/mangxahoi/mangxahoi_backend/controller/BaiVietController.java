@@ -1,6 +1,7 @@
 package com.mangxahoi.mangxahoi_backend.controller;
 
 import com.mangxahoi.mangxahoi_backend.dto.BaiVietDTO;
+import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
@@ -415,5 +416,28 @@ public class BaiVietController {
         response.put("tongSoTrang", baiVietPage.getTotalPages());
         response.put("tongSoBaiViet", baiVietPage.getTotalElements());
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Lấy danh sách người dùng đã thích bài viết
+     * 
+     * @param idBaiViet ID của bài viết
+     * @param authorization Authorization header
+     * @return Danh sách người dùng đã thích
+     */
+    @GetMapping("/{idBaiViet}/luot-thich")
+    public ResponseEntity<List<NguoiDungDTO>> layDanhSachNguoiThich(
+            @PathVariable Integer idBaiViet,
+            @RequestHeader("Authorization") String authorization) {
+        
+        try {
+            NguoiDung nguoiDung = getUserFromToken(authorization);
+            List<NguoiDungDTO> danhSachNguoiThich = baiVietService.layDanhSachNguoiThichBaiViet(idBaiViet);
+            return ResponseEntity.ok(danhSachNguoiThich);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 } 
