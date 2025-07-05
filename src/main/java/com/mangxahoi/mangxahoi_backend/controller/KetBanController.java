@@ -2,12 +2,15 @@ package com.mangxahoi.mangxahoi_backend.controller;
 
 import com.mangxahoi.mangxahoi_backend.service.KetBanService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
+import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
+import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaNhanDTO;
+import org.springframework.http.HttpStatus;
 
 import java.util.Map;
 
@@ -88,14 +91,22 @@ public class KetBanController {
     }
 
     @GetMapping("/danh-sach/ban-be")
-    public ResponseEntity<Page<com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO>> danhSachBanBe(
-            @RequestHeader("Authorization") String authHeader, Pageable pageable) {
-        Integer idNguoiDung = getUserIdFromToken(authHeader);
-        return ResponseEntity.ok(ketBanService.danhSachBanBe(idNguoiDung, pageable));
+    public ResponseEntity<?> layDanhSachBanBe(@RequestHeader("Authorization") String authorization) {
+        try {
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Thiếu hoặc sai định dạng Authorization header");
+            }
+            String token = authorization.substring(7);
+            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+            Integer idNguoiDung = nguoiDung.getId();
+            return ResponseEntity.ok(ketBanService.danhSachBanBe(idNguoiDung, Pageable.unpaged()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token không hợp lệ hoặc đã hết hạn");
+        }
     }
 
     @GetMapping("/danh-sach/loi-moi-nhan")
-    public ResponseEntity<Page<com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO>> danhSachLoiMoiNhan(
+    public ResponseEntity<Page<LoiMoiKetBanDaNhanDTO>> danhSachLoiMoiNhan(
             @RequestHeader("Authorization") String authHeader, Pageable pageable) {
         Integer idNguoiDung = getUserIdFromToken(authHeader);
         return ResponseEntity.ok(ketBanService.danhSachLoiMoiKetBan(idNguoiDung, pageable));

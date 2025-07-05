@@ -1,4 +1,4 @@
- package com.mangxahoi.mangxahoi_backend.controller;
+package com.mangxahoi.mangxahoi_backend.controller;
 
 import com.mangxahoi.mangxahoi_backend.dto.request.GuiThongBaoRequest;
 import com.mangxahoi.mangxahoi_backend.entity.*;
@@ -109,13 +109,13 @@ public class ThongBaoController {
     }
 
     @GetMapping("/nguoi-dung/{idNguoiDung}")
-    public ResponseEntity<?> layThongBaoNguoiDung(@RequestHeader("Authorization") String authorization,
-                                                  @PathVariable Integer idNguoiDung) {
+    public ResponseEntity<?> layThongBaoNguoiDung(@PathVariable Integer idNguoiDung, @RequestHeader("Authorization") String authorization) {
         try {
-            String token = authorization;
-            if (authorization.startsWith("Bearer ")) {
-                token = authorization.substring(7);
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Thiếu hoặc sai định dạng Authorization header");
             }
+            String token = authorization.substring(7);
+            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
             // Có thể kiểm tra quyền ở đây nếu cần
             Optional<NguoiDung> nguoiDungOpt = nguoiDungRepository.findById(idNguoiDung);
             if (nguoiDungOpt.isEmpty()) {
@@ -124,7 +124,7 @@ public class ThongBaoController {
             List<ThongBao> thongBaos = thongBaoRepository.findByNguoiNhan(nguoiDungOpt.get());
             return ResponseEntity.ok(thongBaos);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token không hợp lệ hoặc đã hết hạn");
         }
     }
 }

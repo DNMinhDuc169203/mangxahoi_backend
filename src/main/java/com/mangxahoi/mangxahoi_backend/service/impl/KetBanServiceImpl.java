@@ -2,6 +2,7 @@ package com.mangxahoi.mangxahoi_backend.service.impl;
 
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
+import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaNhanDTO;
 import com.mangxahoi.mangxahoi_backend.entity.KetBan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
@@ -170,10 +171,22 @@ public class KetBanServiceImpl implements KetBanService {
     }
 
     @Override
-    public Page<NguoiDungDTO> danhSachLoiMoiKetBan(Integer idNguoiDung, Pageable pageable) {
+    public Page<LoiMoiKetBanDaNhanDTO> danhSachLoiMoiKetBan(Integer idNguoiDung, Pageable pageable) {
         NguoiDung nguoiDung = timNguoiDungBangId(idNguoiDung);
         Page<KetBan> loiMoiPage = ketBanRepository.findByNguoiNhanAndTrangThai(nguoiDung, TrangThaiKetBan.cho_chap_nhan, pageable);
-        return loiMoiPage.map(ketBan -> chuyenSangDTO(ketBan.getNguoiGui()));
+        return loiMoiPage.map(ketBan -> {
+            String anhDaiDien = null;
+            if (ketBan.getNguoiGui().getAnhDaiDien() != null && !ketBan.getNguoiGui().getAnhDaiDien().isEmpty()) {
+                anhDaiDien = ketBan.getNguoiGui().getAnhDaiDien().get(0).getUrl();
+            }
+            return LoiMoiKetBanDaNhanDTO.builder()
+                .idLoiMoi(ketBan.getId())
+                .idNguoiGui(ketBan.getNguoiGui().getId())
+                .hoTenNguoiGui(ketBan.getNguoiGui().getHoTen())
+                .anhDaiDienNguoiGui(anhDaiDien)
+                .emailNguoiGui(ketBan.getNguoiGui().getEmail())
+                .build();
+        });
     }
 
     @Override
