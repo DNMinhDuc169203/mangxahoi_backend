@@ -122,7 +122,23 @@ public class ThongBaoController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Người dùng không tồn tại");
             }
             List<ThongBao> thongBaos = thongBaoRepository.findByNguoiNhan(nguoiDungOpt.get());
-            return ResponseEntity.ok(thongBaos);
+            // Chuyển đổi sang DTO
+            List<com.mangxahoi.mangxahoi_backend.dto.ThongBaoDTO> thongBaoDTOs = thongBaos.stream().map(tb -> {
+                com.mangxahoi.mangxahoi_backend.dto.ThongBaoDTO dto = new com.mangxahoi.mangxahoi_backend.dto.ThongBaoDTO();
+                dto.setId(tb.getId());
+                dto.setLoai(tb.getLoai());
+                dto.setTieuDe(tb.getTieuDe());
+                dto.setNoiDung(tb.getNoiDung());
+                dto.setDaDoc(tb.getDaDoc());
+                dto.setMucDoUuTien(tb.getMucDoUuTien());
+                dto.setNgayTao(tb.getNgayTao());
+                if (tb.getNguoiNhan() != null) {
+                    dto.setNguoiNhanId(tb.getNguoiNhan().getId());
+                    dto.setNguoiNhanTen(tb.getNguoiNhan().getHoTen());
+                }
+                return dto;
+            }).toList();
+            return ResponseEntity.ok(thongBaoDTOs);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token không hợp lệ hoặc đã hết hạn");
         }
