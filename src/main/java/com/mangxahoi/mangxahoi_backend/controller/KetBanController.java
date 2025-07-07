@@ -50,6 +50,7 @@ public class KetBanController {
             @PathVariable Integer idLoiMoi) {
         Integer idNguoiDung = getUserIdFromToken(authHeader);
         ketBanService.chapNhanLoiMoiKetBan(idNguoiDung, idLoiMoi);
+            thongBaoService.xoaThongBaoKetBanSauKhiChapNhan(idLoiMoi);
         return ResponseEntity.ok(Map.of("message", "Chấp nhận lời mời kết bạn thành công."));
     }
 

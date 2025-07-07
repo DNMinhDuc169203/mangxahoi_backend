@@ -6,14 +6,17 @@ import java.time.LocalDateTime;
 @Data
 public class ThongBaoDTO {
     private Integer id;
+    private String anhDaiDienNguoiGui;
     private String loai;
     private String tieuDe;
     private String noiDung;
     private Boolean daDoc;
     private String mucDoUuTien;
     private LocalDateTime ngayTao;
+    private String noiDungBaiViet;
     private Integer nguoiNhanId;
     private String nguoiNhanTen;
+    private Boolean daChapNhan;
     private Integer idBaiViet;      // tuong_tac
     private Integer idBinhLuan;     // tuong_tac
     private String loaiTuongTac;    // tuong_tac

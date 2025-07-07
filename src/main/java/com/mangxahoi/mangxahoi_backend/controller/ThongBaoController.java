@@ -165,6 +165,7 @@ public class ThongBaoController {
                 dto.setTieuDe(tb.getTieuDe());
                 dto.setNoiDung(tb.getNoiDung());
                 dto.setDaDoc(tb.getDaDoc());
+                
                 dto.setMucDoUuTien(tb.getMucDoUuTien());
                 dto.setNgayTao(tb.getNgayTao());
                 if (tb.getNguoiNhan() != null) {
@@ -176,13 +177,22 @@ public class ThongBaoController {
                     case "tuong_tac" -> {
                         if (tb.getThongBaoTuongTacs() != null && !tb.getThongBaoTuongTacs().isEmpty()) {
                             ThongBaoTuongTac tbt = tb.getThongBaoTuongTacs().get(0);
-                            if (tbt.getBaiViet() != null) dto.setIdBaiViet(tbt.getBaiViet().getId());
+                            if (tbt.getBaiViet() != null) {
+                                dto.setIdBaiViet(tbt.getBaiViet().getId());
+                                dto.setNoiDungBaiViet(tbt.getBaiViet().getNoiDung());
+                            }
                             if (tbt.getBinhLuan() != null) dto.setIdBinhLuan(tbt.getBinhLuan().getId());
                             dto.setLoaiTuongTac(tbt.getLoaiTuongTac());
                             dto.setNoiDungTuongTac(tbt.getNoiDungTuongTac());
                             if (tbt.getNguoiGui() != null) {
                                 dto.setIdNguoiGui(tbt.getNguoiGui().getId());
                                 dto.setTenNguoiGui(tbt.getNguoiGui().getHoTen());
+                                // Lấy ảnh đại diện người gửi
+                                String anhDaiDien = null;
+                                if (tbt.getNguoiGui().getAnhDaiDien() != null && !tbt.getNguoiGui().getAnhDaiDien().isEmpty()) {
+                                    anhDaiDien = tbt.getNguoiGui().getAnhDaiDien().get(0).getUrl();
+                                }
+                                dto.setAnhDaiDienNguoiGui(anhDaiDien);
                             }
                         }
                     }
@@ -192,6 +202,12 @@ public class ThongBaoController {
                             if (tbkb.getNguoiGui() != null) {
                                 dto.setIdNguoiGui(tbkb.getNguoiGui().getId());
                                 dto.setTenNguoiGui(tbkb.getNguoiGui().getHoTen());
+                                // Lấy ảnh đại diện người gửi
+                                String anhDaiDien = null;
+                                if (tbkb.getNguoiGui().getAnhDaiDien() != null && !tbkb.getNguoiGui().getAnhDaiDien().isEmpty()) {
+                                    anhDaiDien = tbkb.getNguoiGui().getAnhDaiDien().get(0).getUrl();
+                                }
+                                dto.setAnhDaiDienNguoiGui(anhDaiDien);
                             }
                             if (tbkb.getKetBan() != null) {
                                 dto.setIdKetBan(tbkb.getKetBan().getId());

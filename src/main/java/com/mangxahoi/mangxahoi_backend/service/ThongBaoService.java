@@ -255,4 +255,20 @@ public class ThongBaoService {
             System.err.println("Lỗi gửi thông báo tin nhắn: " + e.getMessage());
         }
     }
+
+    /**
+     * Xóa notification friend request khi đã chấp nhận kết bạn
+     */
+    @Transactional
+    public void xoaThongBaoKetBanSauKhiChapNhan(Integer idKetBan) {
+        KetBan ketBan = ketBanRepository.findById(idKetBan).orElse(null);
+        if (ketBan == null) return;
+        // Lấy tất cả ThongBaoKetBan liên quan đến KetBan này
+        java.util.List<ThongBaoKetBan> thongBaoKetBans = thongBaoKetBanRepository.findByKetBan(ketBan);
+        for (ThongBaoKetBan tbkb : thongBaoKetBans) {
+            ThongBao thongBao = tbkb.getThongBao();
+            thongBaoKetBanRepository.delete(tbkb); // Xóa chi tiết
+            thongBaoRepository.delete(thongBao);   // Xóa bản ghi chính
+        }
+    }
 } 

@@ -20,4 +20,5 @@ public interface ThongBaoKetBanRepository extends JpaRepository<ThongBaoKetBan, 
     void deleteByNguoiGui(NguoiDung nguoiGui);
     
     void deleteByKetBan(KetBan ketBan);
+    List<ThongBaoKetBan> findByKetBan_Id(Integer idKetBan);
 } 
