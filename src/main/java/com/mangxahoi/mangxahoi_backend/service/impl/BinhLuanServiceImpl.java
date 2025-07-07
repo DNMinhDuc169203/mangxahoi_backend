@@ -6,11 +6,13 @@ import com.mangxahoi.mangxahoi_backend.entity.BinhLuan;
 import com.mangxahoi.mangxahoi_backend.entity.LuotThichBinhLuan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
+import com.mangxahoi.mangxahoi_backend.entity.ThongBao;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
 import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.LuotThichBinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
+import com.mangxahoi.mangxahoi_backend.repository.ThongBaoRepository;
 import com.mangxahoi.mangxahoi_backend.service.BinhLuanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
+
 @Service
 @RequiredArgsConstructor
 public class BinhLuanServiceImpl implements BinhLuanService {
@@ -34,6 +38,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
     private final BaiVietRepository baiVietRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final LuotThichBinhLuanRepository luotThichBinhLuanRepository;
+    private final ThongBaoRepository thongBaoRepository;
 
     @Override
     @Transactional
@@ -72,6 +77,9 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         baiViet.setSoLuotBinhLuan(baiViet.getSoLuotBinhLuan() + 1);
         baiVietRepository.save(baiViet);
         
+        // GỬI THÔNG BÁO TỰ ĐỘNG
+        // Đã bỏ logic gửi thông báo ở đây
+        
         // Chuyển đổi sang DTO và trả về
         return convertToDTO(savedBinhLuan, idNguoiDung);
     }
@@ -105,8 +113,11 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         BinhLuan binhLuan = binhLuanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", id));
         
-        // Kiểm tra quyền xóa bình luận
-        if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
+        // Kiểm tra quyền xóa bình luận: cho phép người viết bình luận hoặc chủ bài viết
+        if (
+            !binhLuan.getNguoiDung().getId().equals(idNguoiDung) &&
+            !binhLuan.getBaiViet().getNguoiDung().getId().equals(idNguoiDung)
+        ) {
             return false;
         }
         
@@ -187,6 +198,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
                 luotThich.setTrangThaiThich(true);
                 luotThich.setNgayHuyThich(null);
                 luotThichBinhLuanRepository.save(luotThich);
+                // Đã bỏ logic gửi thông báo ở đây
                 return true;
             }
             // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -198,6 +210,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
             luotThich.setBinhLuan(binhLuan);
             luotThich.setTrangThaiThich(true);
             luotThichBinhLuanRepository.save(luotThich);
+            // Đã bỏ logic gửi thông báo ở đây
             return true;
         }
     }
@@ -222,6 +235,12 @@ public class BinhLuanServiceImpl implements BinhLuanService {
             luotThich.setTrangThaiThich(false);
             luotThich.setNgayHuyThich(LocalDateTime.now());
             luotThichBinhLuanRepository.save(luotThich);
+            // XÓA THÔNG BÁO TƯƠNG ỨNG
+            thongBaoRepository.findByNguoiNhan(binhLuan.getNguoiDung()).stream()
+                .filter(tb -> tb.getLoai().equals(LoaiThongBao.tuong_tac.name()) &&
+                        tb.getNoiDung() != null &&
+                        tb.getNoiDung().contains("Người dùng " + nguoiDung.getHoTen() + " vừa thích bình luận của bạn."))
+                .forEach(tb -> thongBaoRepository.delete(tb));
             return true;
         }
         

@@ -1,6 +1,7 @@
 package com.mangxahoi.mangxahoi_backend.service;
 
 import com.mangxahoi.mangxahoi_backend.dto.BaiVietDTO;
+import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,4 +34,12 @@ public interface BaiVietService {
      * Lấy newsfeed tổng hợp cho người dùng (giống Facebook)
      */
     Page<BaiVietDTO> layNewsfeedTongHop(Integer idNguoiDung, Pageable pageable);
+    
+    /**
+     * Lấy danh sách người dùng đã thích bài viết
+     * 
+     * @param idBaiViet ID của bài viết
+     * @return Danh sách người dùng đã thích
+     */
+    List<NguoiDungDTO> layDanhSachNguoiThichBaiViet(Integer idBaiViet);
 } 

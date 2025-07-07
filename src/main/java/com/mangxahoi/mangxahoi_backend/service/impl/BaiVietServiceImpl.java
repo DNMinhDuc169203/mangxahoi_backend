@@ -1,9 +1,11 @@
 package com.mangxahoi.mangxahoi_backend.service.impl;
 
 import com.mangxahoi.mangxahoi_backend.dto.BaiVietDTO;
+import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.entity.*;
 import com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiMedia;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.*;
 import com.mangxahoi.mangxahoi_backend.service.BaiVietService;
@@ -32,6 +34,7 @@ public class BaiVietServiceImpl implements BaiVietService {
     private final LuotThichBaiVietRepository luotThichBaiVietRepository;
     private final CloudinaryService cloudinaryService;
     private final KetBanRepository ketBanRepository;
+    private final ThongBaoRepository thongBaoRepository;
 
     @Override
     @Transactional
@@ -331,11 +334,9 @@ public class BaiVietServiceImpl implements BaiVietService {
                 luotThich.setTrangThaiThich(true);
                 luotThich.setNgayHuyThich(null);
                 luotThichBaiVietRepository.save(luotThich);
-                
-                // Tăng số lượt thích của bài viết
                 baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
                 baiVietRepository.save(baiViet);
-                
+                // Đã bỏ logic gửi thông báo ở đây
                 return true;
             }
             // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -351,7 +352,7 @@ public class BaiVietServiceImpl implements BaiVietService {
             // Tăng số lượt thích của bài viết
             baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
             baiVietRepository.save(baiViet);
-            
+            // Đã bỏ logic gửi thông báo ở đây
             return true;
         }
     }
@@ -380,7 +381,12 @@ public class BaiVietServiceImpl implements BaiVietService {
             // Giảm số lượt thích của bài viết
             baiViet.setSoLuotThich(Math.max(0, baiViet.getSoLuotThich() - 1));
             baiVietRepository.save(baiViet);
-            
+            // XÓA THÔNG BÁO TƯƠNG ỨNG
+            thongBaoRepository.findByNguoiNhan(baiViet.getNguoiDung()).stream()
+                .filter(tb -> tb.getLoai().equals(LoaiThongBao.tuong_tac.name()) &&
+                        tb.getNoiDung() != null &&
+                        tb.getNoiDung().contains("Người dùng " + nguoiDung.getHoTen() + " vừa thích bài viết của bạn."))
+                .forEach(tb -> thongBaoRepository.delete(tb));
             return true;
         }
         
@@ -440,6 +446,53 @@ public class BaiVietServiceImpl implements BaiVietService {
             .toList();
 
         return new org.springframework.data.domain.PageImpl<>(pageContent, pageable, sorted.size());
+    }
+
+    @Override
+    public List<NguoiDungDTO> layDanhSachNguoiThichBaiViet(Integer idBaiViet) {
+        BaiViet baiViet = baiVietRepository.findById(idBaiViet)
+                .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
+        
+        List<NguoiDung> nguoiDungs = luotThichBaiVietRepository.findNguoiDungsByBaiVietAndTrangThaiThichTrue(baiViet);
+        
+        return nguoiDungs.stream()
+                .map(this::convertToNguoiDungDTO)
+                .collect(Collectors.toList());
+    }
+    
+    private NguoiDungDTO convertToNguoiDungDTO(NguoiDung nguoiDung) {
+        NguoiDungDTO dto = new NguoiDungDTO();
+        dto.setId(nguoiDung.getId());
+        dto.setHoTen(nguoiDung.getHoTen());
+        dto.setEmail(nguoiDung.getEmail());
+        dto.setSoDienThoai(nguoiDung.getSoDienThoai());
+        dto.setNgaySinh(nguoiDung.getNgaySinh());
+        dto.setGioiTinh(nguoiDung.getGioiTinh());
+        dto.setDiaChi(nguoiDung.getDiaChi());
+        dto.setTieuSu(nguoiDung.getTieuSu());
+        dto.setNgayTao(nguoiDung.getNgayTao());
+        dto.setLanDangNhapCuoi(nguoiDung.getLanDangNhapCuoi());
+        dto.setVaiTro(nguoiDung.getVaiTro());
+        dto.setMucRiengTu(nguoiDung.getMucRiengTu());
+        dto.setAnhDaiDien(null);
+        dto.setDaXacThuc(nguoiDung.getDaXacThuc());
+        dto.setDangHoatDong(nguoiDung.getDangHoatDong());
+        dto.setSoBanBe(nguoiDung.getSoBanBe());
+        dto.setSoBaiDang(nguoiDung.getSoBaiDang());
+        dto.setEmailCongKhai(nguoiDung.getEmailCongKhai());
+        dto.setSdtCongKhai(nguoiDung.getSdtCongKhai());
+        dto.setNgaySinhCongKhai(nguoiDung.getNgaySinhCongKhai());
+        dto.setGioiTinhCongKhai(nguoiDung.getGioiTinhCongKhai());
+
+        if (nguoiDung.getAnhDaiDien() != null && !nguoiDung.getAnhDaiDien().isEmpty()) {
+            NguoiDungAnh anhChinh = nguoiDung.getAnhDaiDien().stream()
+                .filter(NguoiDungAnh::getLaAnhChinh)
+                .findFirst()
+                .orElse(nguoiDung.getAnhDaiDien().get(0));
+            dto.setAnhDaiDien(anhChinh.getUrl());
+        }
+
+        return dto;
     }
 
     /**

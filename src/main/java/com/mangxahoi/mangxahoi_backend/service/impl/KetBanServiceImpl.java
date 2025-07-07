@@ -2,15 +2,19 @@ package com.mangxahoi.mangxahoi_backend.service.impl;
 
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
+import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaNhanDTO;
 import com.mangxahoi.mangxahoi_backend.entity.KetBan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
+import com.mangxahoi.mangxahoi_backend.entity.ThongBao;
 import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.exception.ValidationException;
 import com.mangxahoi.mangxahoi_backend.repository.KetBanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungAnhRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
+import com.mangxahoi.mangxahoi_backend.repository.ThongBaoRepository;
 import com.mangxahoi.mangxahoi_backend.service.KetBanService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +33,7 @@ public class KetBanServiceImpl implements KetBanService {
     private final NguoiDungRepository nguoiDungRepository;
     private final NguoiDungAnhRepository nguoiDungAnhRepository;
     private final TokenUtil tokenUtil;
+    private final ThongBaoRepository thongBaoRepository;
 
     private NguoiDung layNguoiDungTuToken(String token) {
         return tokenUtil.layNguoiDungTuToken(token);
@@ -41,7 +46,7 @@ public class KetBanServiceImpl implements KetBanService {
     
     @Override
     @Transactional
-    public boolean guiLoiMoiKetBan(Integer idNguoiGui, Integer idNguoiNhan) {
+    public Integer guiLoiMoiKetBan(Integer idNguoiGui, Integer idNguoiNhan) {
         if (idNguoiGui.equals(idNguoiNhan)) {
             throw new ValidationException("Bạn không thể tự kết bạn với chính mình");
         }
@@ -56,8 +61,9 @@ public class KetBanServiceImpl implements KetBanService {
         ketBan.setNguoiGui(nguoiGui);
         ketBan.setNguoiNhan(nguoiNhan);
         ketBan.setTrangThai(TrangThaiKetBan.cho_chap_nhan);
-        ketBanRepository.save(ketBan);
-        return true;
+        ketBan = ketBanRepository.save(ketBan);
+        
+        return ketBan.getId();
     }
 
     @Override
@@ -157,10 +163,22 @@ public class KetBanServiceImpl implements KetBanService {
     }
 
     @Override
-    public Page<NguoiDungDTO> danhSachLoiMoiKetBan(Integer idNguoiDung, Pageable pageable) {
+    public Page<LoiMoiKetBanDaNhanDTO> danhSachLoiMoiKetBan(Integer idNguoiDung, Pageable pageable) {
         NguoiDung nguoiDung = timNguoiDungBangId(idNguoiDung);
         Page<KetBan> loiMoiPage = ketBanRepository.findByNguoiNhanAndTrangThai(nguoiDung, TrangThaiKetBan.cho_chap_nhan, pageable);
-        return loiMoiPage.map(ketBan -> chuyenSangDTO(ketBan.getNguoiGui()));
+        return loiMoiPage.map(ketBan -> {
+            String anhDaiDien = null;
+            if (ketBan.getNguoiGui().getAnhDaiDien() != null && !ketBan.getNguoiGui().getAnhDaiDien().isEmpty()) {
+                anhDaiDien = ketBan.getNguoiGui().getAnhDaiDien().get(0).getUrl();
+            }
+            return LoiMoiKetBanDaNhanDTO.builder()
+                .idLoiMoi(ketBan.getId())
+                .idNguoiGui(ketBan.getNguoiGui().getId())
+                .hoTenNguoiGui(ketBan.getNguoiGui().getHoTen())
+                .anhDaiDienNguoiGui(anhDaiDien)
+                .emailNguoiGui(ketBan.getNguoiGui().getEmail())
+                .build();
+        });
     }
 
     @Override

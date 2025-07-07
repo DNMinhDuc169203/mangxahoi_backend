@@ -9,6 +9,7 @@ import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
 import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.service.BinhLuanService;
+import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,6 +35,7 @@ public class BinhLuanController {
     private final BaiVietRepository baiVietRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final TokenUtil tokenUtil;
+    private final ThongBaoService thongBaoService;
 
     private NguoiDung getUserFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -66,6 +68,9 @@ public class BinhLuanController {
             
             // Thêm bình luận
             BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, nguoiDung.getId(), null, binhLuanDTO);
+            
+            // Gửi thông báo cho chủ bài viết
+            thongBaoService.guiThongBaoBinhLuan(nguoiDung.getId(), idBaiViet);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(createdBinhLuan);
             
@@ -110,6 +115,9 @@ public class BinhLuanController {
             
             // Thêm bình luận phản hồi
             BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, nguoiDung.getId(), idBinhLuanCha, binhLuanDTO);
+            
+            // Gửi thông báo cho người bình luận cha
+            thongBaoService.guiThongBaoTraLoiBinhLuan(nguoiDung.getId(), idBinhLuanCha);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(createdBinhLuan);
             
@@ -266,12 +274,16 @@ public class BinhLuanController {
             NguoiDung nguoiDung = getUserFromToken(authorization);
             boolean result = binhLuanService.thichBinhLuan(idBinhLuan, nguoiDung.getId());
             
+            // Gửi thông báo nếu thích thành công
+            if (result) {
+                thongBaoService.guiThongBaoThichBinhLuan(nguoiDung.getId(), idBinhLuan);
+            }
+            
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", result);
             response.put("message", result ? "Đã thích bình luận" : "Không thể thích bình luận");
             
             return ResponseEntity.ok(response);
-            
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {

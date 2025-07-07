@@ -1,11 +1,13 @@
 package com.mangxahoi.mangxahoi_backend.controller;
 
 import com.mangxahoi.mangxahoi_backend.dto.BaiVietDTO;
+import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.service.BaiVietService;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
+import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,6 +33,7 @@ public class BaiVietController {
     private final NguoiDungRepository nguoiDungRepository;
     private final CloudinaryService cloudinaryService;
     private final TokenUtil tokenUtil;
+    private final ThongBaoService thongBaoService;
 
     private NguoiDung getUserFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -331,6 +334,11 @@ public class BaiVietController {
             NguoiDung nguoiDung = getUserFromToken(authorization);
             boolean result = baiVietService.thichBaiViet(idBaiViet, nguoiDung.getId());
             
+            // Gửi thông báo nếu thích thành công
+            if (result) {
+                thongBaoService.guiThongBaoThichBaiViet(nguoiDung.getId(), idBaiViet);
+            }
+            
             Map<String, Object> response = new HashMap<>();
             response.put("thanhCong", result);
             response.put("message", result ? "Đã thích bài viết" : "Không thể thích bài viết");
@@ -415,5 +423,28 @@ public class BaiVietController {
         response.put("tongSoTrang", baiVietPage.getTotalPages());
         response.put("tongSoBaiViet", baiVietPage.getTotalElements());
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Lấy danh sách người dùng đã thích bài viết
+     * 
+     * @param idBaiViet ID của bài viết
+     * @param authorization Authorization header
+     * @return Danh sách người dùng đã thích
+     */
+    @GetMapping("/{idBaiViet}/luot-thich")
+    public ResponseEntity<List<NguoiDungDTO>> layDanhSachNguoiThich(
+            @PathVariable Integer idBaiViet,
+            @RequestHeader("Authorization") String authorization) {
+        
+        try {
+            NguoiDung nguoiDung = getUserFromToken(authorization);
+            List<NguoiDungDTO> danhSachNguoiThich = baiVietService.layDanhSachNguoiThichBaiViet(idBaiViet);
+            return ResponseEntity.ok(danhSachNguoiThich);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 } 
