@@ -44,6 +44,7 @@ public class SecurityConfig {
                     "/api/ket-ban/**",
                     "/{idNguoiDung}",
                     "/api/thong-bao/**",
+                        "/api/tinnhan/**",
                     "/api/admin/dang-nhap"
                 ).permitAll()
                 .anyRequest().authenticated()
