@@ -17,13 +17,30 @@ import com.mangxahoi.mangxahoi_backend.repository.PhienDangNhapNguoiDungReposito
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.DayOfWeek;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import com.mangxahoi.mangxahoi_backend.admin.dto.request.ThemViPhamRequest;
+import com.mangxahoi.mangxahoi_backend.admin.dto.response.LichSuViPhamDTO;
+import com.mangxahoi.mangxahoi_backend.admin.dto.response.ThongTinViPhamNguoiDungDTO;
+import com.mangxahoi.mangxahoi_backend.entity.LichSuViPham;
+import com.mangxahoi.mangxahoi_backend.entity.BaoCao;
+import com.mangxahoi.mangxahoi_backend.repository.LichSuViPhamRepository;
+import com.mangxahoi.mangxahoi_backend.repository.BaoCaoRepository;
+import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
+import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
+import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
+import com.mangxahoi.mangxahoi_backend.admin.dto.response.BaoCaoDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +50,11 @@ public class AdminServiceImpl implements AdminService {
     private final NguoiDungAnhRepository nguoiDungAnhRepository;
     private final PhienDangNhapNguoiDungRepository phienDangNhapRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LichSuViPhamRepository lichSuViPhamRepository;
+    private final BaoCaoRepository baoCaoRepository;
+    private final ThongBaoService thongBaoService;
+    private final BaiVietRepository baiVietRepository;
+    private final BinhLuanRepository binhLuanRepository;
     
     @Override
     public DangNhapResponse dangNhap(DangNhapAdminRequest request) {
@@ -88,18 +110,18 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public ThongKeResponse layThongKeTongQuat() {
-        // Đây sẽ là logic để lấy các thống kê từ cơ sở dữ liệu
-        // Giả lập dữ liệu
+        // Lấy thời điểm đầu tuần (thứ 2)
+        LocalDateTime startOfWeek = LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay();
         return ThongKeResponse.builder()
                 .tongSoNguoiDung(nguoiDungRepository.count())
-                .nguoiDungMoi(0)
-                .tongSoBaiViet(0) 
-                .baiVietMoi(0)
-                .tongSoBinhLuan(0)
-                .binhLuanMoi(0)
-                .tongSoBaoCao(0)
-                .baoCaoChuaXuLy(0)
-                .nguoiDungBiKhoa(0)
+                .nguoiDungMoi(nguoiDungRepository.countByNgayTaoAfter(startOfWeek))
+                .tongSoBaiViet(baiVietRepository.count())
+                .baiVietMoi(baiVietRepository.countByNgayTaoAfter(startOfWeek))
+                .tongSoBinhLuan(binhLuanRepository.count())
+                .binhLuanMoi(binhLuanRepository.countByNgayTaoAfter(startOfWeek))
+                .tongSoBaoCao(baoCaoRepository.count())
+                .baoCaoChuaXuLy(baoCaoRepository.countByTrangThai(com.mangxahoi.mangxahoi_backend.enums.TrangThaiBaoCao.cho_xu_ly))
+                .nguoiDungBiKhoa(nguoiDungRepository.countByBiTamKhoaTrue())
                 .trendTuanNay(new ThongKeResponse.ThongKeTrend("Chưa có dữ liệu", 0, 0, 0))
                 .build();
     }
@@ -153,6 +175,114 @@ public class AdminServiceImpl implements AdminService {
         // Giả lập xử lý báo cáo
     }
     
+    @Override
+    public List<LichSuViPhamDTO> lichSuViPhamNguoiDung(Integer userId) {
+        NguoiDung nguoiDung = nguoiDungRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", userId));
+        List<LichSuViPham> lichSu = lichSuViPhamRepository.findByNguoiDung(nguoiDung);
+        return lichSu.stream().map(this::toLichSuViPhamDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public LichSuViPhamDTO themViPhamNguoiDung(ThemViPhamRequest request, Integer adminId) {
+        NguoiDung nguoiDung = nguoiDungRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", request.getUserId()));
+        NguoiDung admin = nguoiDungRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin", "id", adminId));
+        BaoCao baoCao = null;
+        if (request.getBaoCaoId() != null) {
+            baoCao = baoCaoRepository.findById(request.getBaoCaoId()).orElse(null);
+        }
+        // Đếm số lần vi phạm trước đó
+        long soLanViPham = lichSuViPhamRepository.countByNguoiDung(nguoiDung);
+        // Xác định hình phạt
+        String hinhPhat;
+        if (soLanViPham == 0) {
+            hinhPhat = "Cảnh báo";
+        } else if (soLanViPham == 1) {
+            hinhPhat = "Khóa 1 ngày";
+        } else if (soLanViPham == 2) {
+            hinhPhat = "Khóa 3 ngày";
+        } else {
+            hinhPhat = "Khóa vĩnh viễn";
+        }
+        // Áp dụng hình phạt lên tài khoản
+        if (hinhPhat.equals("Khóa 1 ngày")) {
+            nguoiDung.setBiTamKhoa(true);
+            nguoiDung.setLyDoTamKhoa(request.getNoiDungViPham());
+            nguoiDung.setNgayTamKhoa(java.time.LocalDateTime.now());
+            nguoiDung.setNgayMoKhoa(java.time.LocalDateTime.now().plusDays(1));
+        } else if (hinhPhat.equals("Khóa 3 ngày")) {
+            nguoiDung.setBiTamKhoa(true);
+            nguoiDung.setLyDoTamKhoa(request.getNoiDungViPham());
+            nguoiDung.setNgayTamKhoa(java.time.LocalDateTime.now());
+            nguoiDung.setNgayMoKhoa(java.time.LocalDateTime.now().plusDays(3));
+        } else if (hinhPhat.equals("Khóa vĩnh viễn")) {
+            nguoiDung.setBiTamKhoa(true);
+            nguoiDung.setLyDoTamKhoa(request.getNoiDungViPham());
+            nguoiDung.setNgayTamKhoa(java.time.LocalDateTime.now());
+            nguoiDung.setNgayMoKhoa(null);
+        }
+        nguoiDungRepository.save(nguoiDung);
+        // Lưu lịch sử vi phạm
+        LichSuViPham viPham = new LichSuViPham();
+        viPham.setNguoiDung(nguoiDung);
+        viPham.setNoiDungViPham(request.getNoiDungViPham());
+        viPham.setLoaiViPham(request.getLoaiViPham());
+        viPham.setThoiGianViPham(java.time.LocalDateTime.now());
+        viPham.setHinhPhat(hinhPhat);
+        viPham.setTrangThaiXuLy("Đã xử lý");
+        viPham.setAdminXuLy(admin);
+        viPham.setGhiChu(request.getGhiChu());
+        viPham.setBaoCaoLienQuan(baoCao);
+        lichSuViPhamRepository.save(viPham);
+        // Gửi thông báo cho user
+        try {
+            thongBaoService.guiThongBaoHeThong(
+                nguoiDung.getId(),
+                "Xử lý vi phạm",
+                "Bạn đã bị xử lý vi phạm: " + hinhPhat + ". Lý do: " + request.getNoiDungViPham()
+            );
+        } catch (Exception e) {
+            System.err.println("Lỗi gửi thông báo vi phạm: " + e.getMessage());
+        }
+        return toLichSuViPhamDTO(viPham);
+    }
+
+    @Override
+    public ThongTinViPhamNguoiDungDTO thongTinViPhamNguoiDung(Integer userId) {
+        NguoiDung nguoiDung = nguoiDungRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", userId));
+        long soLanViPham = lichSuViPhamRepository.countByNguoiDung(nguoiDung);
+        LichSuViPham viPhamGanNhat = lichSuViPhamRepository.findByNguoiDung(nguoiDung)
+                .stream().reduce((first, second) -> second).orElse(null);
+        ThongTinViPhamNguoiDungDTO dto = new ThongTinViPhamNguoiDungDTO();
+        dto.setUserId(nguoiDung.getId());
+        dto.setTenNguoiDung(nguoiDung.getHoTen());
+        dto.setTongSoLanViPham((int) soLanViPham);
+        dto.setHinhPhatGanNhat(viPhamGanNhat != null ? viPhamGanNhat.getHinhPhat() : null);
+        dto.setTrangThaiTaiKhoan(
+            nguoiDung.getBiXoaMem() ? "Đã xóa" : (nguoiDung.getBiTamKhoa() ? "Đang bị khóa" : "Bình thường")
+        );
+        return dto;
+    }
+
+    @Override
+    public List<BaoCaoDTO> findTop5BaoCaoMoiNhat() {
+        List<BaoCao> list = baoCaoRepository.findTop5ByOrderByNgayTaoDesc(PageRequest.of(0, 5));
+        return list.stream().map(bc -> {
+            BaoCaoDTO dto = new BaoCaoDTO();
+            dto.setId(bc.getId());
+            dto.setLoaiBaoCao(bc.getLyDo() != null ? bc.getLyDo().toString() : null);
+            dto.setNoiDung(bc.getMoTa());
+            dto.setNgayTao(bc.getNgayTao());
+            dto.setTenNguoiBaoCao(bc.getNguoiBaoCao() != null ? bc.getNguoiBaoCao().getHoTen() : null);
+            dto.setTenNguoiBiBaoCao(bc.getNguoiDungBiBaoCao() != null ? bc.getNguoiDungBiBaoCao().getHoTen() : null);
+            return dto;
+        }).toList();
+    }
+
     private NguoiDungDTO chuyenSangDTO(NguoiDung nguoiDung) {
         // Lấy ảnh đại diện
         String anhDaiDien = null;
@@ -180,5 +310,22 @@ public class AdminServiceImpl implements AdminService {
                 .vaiTro(nguoiDung.getVaiTro())
                 .anhDaiDien(anhDaiDien)
                 .build();
+    }
+
+    private LichSuViPhamDTO toLichSuViPhamDTO(LichSuViPham v) {
+        LichSuViPhamDTO dto = new LichSuViPhamDTO();
+        dto.setId(v.getId());
+        dto.setUserId(v.getNguoiDung().getId());
+        dto.setTenNguoiDung(v.getNguoiDung().getHoTen());
+        dto.setNoiDungViPham(v.getNoiDungViPham());
+        dto.setLoaiViPham(v.getLoaiViPham());
+        dto.setThoiGianViPham(v.getThoiGianViPham());
+        dto.setHinhPhat(v.getHinhPhat());
+        dto.setTrangThaiXuLy(v.getTrangThaiXuLy());
+        dto.setAdminXuLyId(v.getAdminXuLy() != null ? v.getAdminXuLy().getId() : null);
+        dto.setTenAdminXuLy(v.getAdminXuLy() != null ? v.getAdminXuLy().getHoTen() : null);
+        dto.setGhiChu(v.getGhiChu());
+        dto.setBaoCaoId(v.getBaoCaoLienQuan() != null ? v.getBaoCaoLienQuan().getId() : null);
+        return dto;
     }
 }

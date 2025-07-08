@@ -64,6 +64,12 @@ public class BaiViet {
     )
     private List<Hashtag> hashtags;
 
+    @Column(name = "bi_an")
+    private Boolean biAn = false;
+
+    @Column(name = "ly_do_an")
+    private String lyDoAn;
+
     @PrePersist
     protected void onCreate() {
         ngayTao = LocalDateTime.now();

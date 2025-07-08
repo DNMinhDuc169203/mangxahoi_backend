@@ -131,7 +131,9 @@ public class NguoiDung {
         biXoaMem = false;
         soBanBe = 0;
         soBaiDang = 0;
-        vaiTro = VaiTro.nguoi_dung;
+        if (vaiTro == null) {
+            vaiTro = VaiTro.nguoi_dung;
+        }
         mucRiengTu = CheDoBaiViet.cong_khai;
     }
 

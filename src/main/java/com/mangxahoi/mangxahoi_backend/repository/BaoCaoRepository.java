@@ -9,6 +9,7 @@ import com.mangxahoi.mangxahoi_backend.enums.TrangThaiBaoCao;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,4 +31,7 @@ public interface BaoCaoRepository extends JpaRepository<BaoCao, Integer> {
     long countByTrangThai(TrangThaiBaoCao trangThai);
     
     long countByNguoiDungBiBaoCao(NguoiDung nguoiDungBiBaoCao);
+
+    @Query("SELECT b FROM BaoCao b ORDER BY b.ngayTao DESC")
+    List<BaoCao> findTop5ByOrderByNgayTaoDesc(Pageable pageable);
 } 
