@@ -52,6 +52,8 @@ public class TinNhan {
         ngayTao = LocalDateTime.now();
         daDoc = false;
         daXoa = false;
-        loaiTinNhan = LoaiTinNhan.van_ban;
+        if (loaiTinNhan == null) {
+            loaiTinNhan = LoaiTinNhan.van_ban;
+        }
     }
 } 
