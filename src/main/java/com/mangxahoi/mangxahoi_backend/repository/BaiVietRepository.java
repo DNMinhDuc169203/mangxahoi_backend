@@ -29,4 +29,9 @@ public interface BaiVietRepository extends JpaRepository<BaiViet, Integer> {
 
     @Query("SELECT b FROM BaiViet b WHERE b.nguoiDung.id IN :friendIds AND b.cheDoRiengTu = 'ban_be' ORDER BY b.ngayTao DESC")
     List<BaiViet> findAllByNguoiDungIdInAndCheDoRiengTu(@Param("friendIds") List<Integer> friendIds, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet cheDoRiengTu);
+
+    @Query("SELECT b FROM BaiViet b ORDER BY b.ngayTao DESC")
+    List<BaiViet> findTop5ByOrderByNgayTaoDesc(Pageable pageable);
+
+    long countByNgayTaoAfter(java.time.LocalDateTime from);
 }

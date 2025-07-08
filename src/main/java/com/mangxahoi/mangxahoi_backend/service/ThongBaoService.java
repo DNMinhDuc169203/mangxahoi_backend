@@ -271,4 +271,19 @@ public class ThongBaoService {
             thongBaoRepository.delete(thongBao);   // Xóa bản ghi chính
         }
     }
+
+    @Transactional
+    public void guiThongBaoHeThong(Integer idNguoiNhan, String tieuDe, String noiDung) {
+        NguoiDung nguoiNhan = nguoiDungRepository.findById(idNguoiNhan).orElse(null);
+        if (nguoiNhan == null) return;
+
+        ThongBao thongBao = ThongBao.builder()
+                .nguoiNhan(nguoiNhan)
+                .loai("he_thong")
+                .tieuDe(tieuDe)
+                .noiDung(noiDung)
+                .mucDoUuTien("trung_binh")
+                .build();
+        thongBaoRepository.save(thongBao);
+    }
 } 

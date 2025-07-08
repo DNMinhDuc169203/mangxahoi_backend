@@ -73,4 +73,6 @@ public interface BinhLuanRepository extends JpaRepository<BinhLuan, Integer> {
      * @param baiViet Bài viết
      */
     void deleteByBaiViet(BaiViet baiViet);
+
+    long countByNgayTaoAfter(java.time.LocalDateTime from);
 } 

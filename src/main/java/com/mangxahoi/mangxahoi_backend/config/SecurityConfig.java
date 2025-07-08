@@ -44,9 +44,14 @@ public class SecurityConfig {
                     "/api/ket-ban/**",
                     "/{idNguoiDung}",
                     "/api/thong-bao/**",
+
                         "/api/tinnhan/**",
-                    "/api/admin/dang-nhap"
+                  
+                    "/api/admin/**",
+                    "/api/bao-cao/guibaocao"
+
                 ).permitAll()
+                .requestMatchers("/api/admin/**").hasRole("quan_tri_vien")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

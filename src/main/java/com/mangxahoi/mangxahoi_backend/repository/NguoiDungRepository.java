@@ -28,4 +28,6 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
     Page<NguoiDung> findByHoTenContainingIgnoreCase(@Param("hoTen") String hoTen, Pageable pageable);
 
     Page<NguoiDung> findBySoDienThoaiContaining(String soDienThoai, Pageable pageable);
+    long countByBiTamKhoaTrue();
+    long countByNgayTaoAfter(java.time.LocalDateTime from);
 } 
