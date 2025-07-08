@@ -35,10 +35,34 @@ public class BaiVietServiceImpl implements BaiVietService {
     private final CloudinaryService cloudinaryService;
     private final KetBanRepository ketBanRepository;
     private final ThongBaoRepository thongBaoRepository;
+    private final LichSuXuLyBaiVietRepository lichSuXuLyBaiVietRepository;
+    private final ChinhSachRepository chinhSachRepository;
 
     @Override
     @Transactional
     public BaiVietDTO taoBaiViet(Integer idNguoiDung, BaiVietDTO baiVietDTO, List<MultipartFile> media) {
+        // Kiểm tra từ khóa cấm (lấy từ chính sách mới nhất nếu có)
+        String noiDung = baiVietDTO.getNoiDung();
+        String tuKhoaCam = null;
+        com.mangxahoi.mangxahoi_backend.entity.ChinhSach chinhSach = chinhSachRepository.findTopByOrderByNgayCapNhatDesc();
+        if (chinhSach != null && chinhSach.getNoiDung() != null) {
+            // Giả sử các từ khóa cấm nằm trong đoạn: "TỪ KHÓA CẤM: ..." (cách nhau bởi dấu phẩy)
+            String[] lines = chinhSach.getNoiDung().split("\n");
+            for (String line : lines) {
+                if (line.trim().toLowerCase().startsWith("từ khóa cấm:")) {
+                    String[] tuKhoaArr = line.substring(line.indexOf(":") + 1).split(",");
+                    for (String tk : tuKhoaArr) {
+                        if (noiDung != null && noiDung.toLowerCase().contains(tk.trim().toLowerCase())) {
+                            tuKhoaCam = tk.trim();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (tuKhoaCam != null) {
+            throw new RuntimeException("Nội dung bài viết chứa từ khóa bị cấm theo chính sách: '" + tuKhoaCam + "'. Vui lòng chỉnh sửa!");
+        }
         // Tìm người dùng
         NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", idNguoiDung));
@@ -565,5 +589,105 @@ public class BaiVietServiceImpl implements BaiVietService {
         // Hiện tại chưa có logic kiểm tra bạn bè, sẽ bổ sung sau
         
         return false;
+    }
+
+    @Override
+    @Transactional
+    public void anBaiVietByAdmin(Integer idBaiViet, Integer adminId, String lyDo) {
+        BaiViet baiViet = baiVietRepository.findById(idBaiViet)
+                .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
+        baiViet.setBiAn(true);
+        baiViet.setLyDoAn(lyDo);
+        baiVietRepository.save(baiViet);
+        // Ghi lịch sử xử lý
+        LichSuXuLyBaiViet ls = new LichSuXuLyBaiViet();
+        ls.setBaiViet(baiViet);
+        ls.setHanhDong("an");
+        ls.setThoiGian(java.time.LocalDateTime.now());
+        ls.setLyDo(lyDo);
+        ls.setAdminXuLy(nguoiDungRepository.findById(adminId).orElse(null));
+        lichSuXuLyBaiVietRepository.save(ls);
+    }
+
+    @Override
+    @Transactional
+    public void hienBaiVietByAdmin(Integer idBaiViet, Integer adminId) {
+        BaiViet baiViet = baiVietRepository.findById(idBaiViet)
+                .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
+        baiViet.setBiAn(false);
+        baiViet.setLyDoAn(null);
+        baiVietRepository.save(baiViet);
+        // Ghi lịch sử xử lý
+        LichSuXuLyBaiViet ls = new LichSuXuLyBaiViet();
+        ls.setBaiViet(baiViet);
+        ls.setHanhDong("hien");
+        ls.setThoiGian(java.time.LocalDateTime.now());
+        ls.setLyDo(null);
+        ls.setAdminXuLy(nguoiDungRepository.findById(adminId).orElse(null));
+        lichSuXuLyBaiVietRepository.save(ls);
+    }
+
+    @Override
+    @Transactional
+    public void xoaBaiVietByAdmin(Integer idBaiViet, Integer adminId, String lyDo) {
+        BaiViet baiViet = baiVietRepository.findById(idBaiViet)
+                .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
+        // Ghi lịch sử xử lý
+        LichSuXuLyBaiViet ls = new LichSuXuLyBaiViet();
+        ls.setBaiViet(baiViet);
+        ls.setHanhDong("xoa");
+        ls.setThoiGian(java.time.LocalDateTime.now());
+        ls.setLyDo(lyDo);
+        ls.setAdminXuLy(nguoiDungRepository.findById(adminId).orElse(null));
+        lichSuXuLyBaiVietRepository.save(ls);
+        baiVietRepository.delete(baiViet);
+    }
+
+    @Override
+    public Page<BaiVietDTO> timKiemBaiVietAdmin(String keyword, String hashtag, String trangThai, String loai, Boolean sensitive, Pageable pageable) {
+        // Lấy tất cả bài viết (có thể tối ưu bằng query động nếu cần)
+        List<BaiViet> all = baiVietRepository.findAll();
+        List<String> tuKhoaNhayCam = List.of("sex", "bạo lực", "đồi trụy", "nhạy cảm"); // ví dụ
+        List<BaiViet> filtered = all.stream()
+            .filter(bv -> keyword == null || bv.getNoiDung().toLowerCase().contains(keyword.toLowerCase()))
+            .filter(bv -> hashtag == null || (bv.getNoiDung() != null && bv.getNoiDung().contains("#" + hashtag)))
+            .filter(bv -> trangThai == null || (trangThai.equals("an") ? Boolean.TRUE.equals(bv.getBiAn()) : Boolean.FALSE.equals(bv.getBiAn())))
+            .filter(bv -> loai == null || (loai.equals("hashtag") ? (bv.getNoiDung() != null && bv.getNoiDung().contains("#")) : (bv.getNoiDung() != null && !bv.getNoiDung().contains("#"))))
+            .filter(bv -> sensitive == null || !sensitive || (bv.getNoiDung() != null && tuKhoaNhayCam.stream().anyMatch(tk -> bv.getNoiDung().toLowerCase().contains(tk))))
+            .collect(java.util.stream.Collectors.toList());
+        List<BaiVietDTO> dtos = filtered.stream().map(this::convertToDTO).collect(java.util.stream.Collectors.toList());
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), dtos.size());
+        return new org.springframework.data.domain.PageImpl<>(dtos.subList(start, end), pageable, dtos.size());
+    }
+
+    @Override
+    public List<LichSuXuLyBaiViet> lichSuXuLyBaiViet(Integer idBaiViet) {
+        BaiViet baiViet = baiVietRepository.findById(idBaiViet)
+                .orElseThrow(() -> new ResourceNotFoundException("Bài viết", "id", idBaiViet));
+        return lichSuXuLyBaiVietRepository.findByBaiViet(baiViet);
+    }
+
+    @Override
+    public Map<String, Object> thongKeBaiViet(String fromDate, String toDate) {
+        List<BaiViet> all = baiVietRepository.findAll();
+        List<String> tuKhoaNhayCam = List.of("sex", "bạo lực", "đồi trụy", "nhạy cảm");
+        long tongSo = all.size();
+        long soBiAn = all.stream().filter(bv -> Boolean.TRUE.equals(bv.getBiAn())).count();
+        long soNhayCam = all.stream().filter(bv -> bv.getNoiDung() != null && tuKhoaNhayCam.stream().anyMatch(tk -> bv.getNoiDung().toLowerCase().contains(tk))).count();
+        // Số bị xóa: đếm trong lịch sử xử lý
+        long soBiXoa = lichSuXuLyBaiVietRepository.findAll().stream().filter(ls -> "xoa".equals(ls.getHanhDong())).count();
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("tongSo", tongSo);
+        result.put("soBiAn", soBiAn);
+        result.put("soBiXoa", soBiXoa);
+        result.put("soNhayCam", soNhayCam);
+        return result;
+    }
+
+    @Override
+    public List<BaiVietDTO> findTop5MoiNhat() {
+        List<BaiViet> list = baiVietRepository.findTop5ByOrderByNgayTaoDesc(PageRequest.of(0, 5));
+        return list.stream().map(this::convertToDTO).toList();
     }
 } 

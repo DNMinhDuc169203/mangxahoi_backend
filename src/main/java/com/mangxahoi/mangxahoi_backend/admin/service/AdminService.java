@@ -8,6 +8,12 @@ import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.dto.response.DangNhapResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.mangxahoi.mangxahoi_backend.admin.dto.request.ThemViPhamRequest;
+import com.mangxahoi.mangxahoi_backend.admin.dto.response.LichSuViPhamDTO;
+import com.mangxahoi.mangxahoi_backend.admin.dto.response.ThongTinViPhamNguoiDungDTO;
+import java.util.List;
+import com.mangxahoi.mangxahoi_backend.entity.BaoCao;
+import com.mangxahoi.mangxahoi_backend.admin.dto.response.BaoCaoDTO;
 
 public interface AdminService {
     
@@ -24,4 +30,15 @@ public interface AdminService {
     Page<Object> danhSachBaoCao(String trangThai, Pageable pageable);
     
     void xuLyBaoCao(Integer id, String trangThai, String ghiChu);
+
+    // Lấy lịch sử vi phạm của user
+    List<LichSuViPhamDTO> lichSuViPhamNguoiDung(Integer userId);
+
+    // Thêm mới vi phạm cho user (tự động xác định hình phạt)
+    LichSuViPhamDTO themViPhamNguoiDung(ThemViPhamRequest request, Integer adminId);
+
+    // Lấy tổng quan vi phạm của user
+    ThongTinViPhamNguoiDungDTO thongTinViPhamNguoiDung(Integer userId);
+
+    List<BaoCaoDTO> findTop5BaoCaoMoiNhat();
 }
