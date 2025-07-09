@@ -1,5 +1,6 @@
 package com.mangxahoi.mangxahoi_backend.entity;
 
+import com.mangxahoi.mangxahoi_backend.enums.LoaiViPham;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -17,8 +18,9 @@ public class LichSuViPham {
     @Column(name = "noi_dung_vi_pham", columnDefinition = "TEXT")
     private String noiDungViPham;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "loai_vi_pham")
-    private String loaiViPham;
+    private LoaiViPham loaiViPham;
 
     @Column(name = "thoi_gian_vi_pham")
     private LocalDateTime thoiGianViPham;
@@ -50,8 +52,8 @@ public class LichSuViPham {
     public String getNoiDungViPham() { return noiDungViPham; }
     public void setNoiDungViPham(String noiDungViPham) { this.noiDungViPham = noiDungViPham; }
 
-    public String getLoaiViPham() { return loaiViPham; }
-    public void setLoaiViPham(String loaiViPham) { this.loaiViPham = loaiViPham; }
+    public LoaiViPham getLoaiViPham() { return loaiViPham; }
+    public void setLoaiViPham(LoaiViPham loaiViPham) { this.loaiViPham = loaiViPham; }
 
     public LocalDateTime getThoiGianViPham() { return thoiGianViPham; }
     public void setThoiGianViPham(LocalDateTime thoiGianViPham) { this.thoiGianViPham = thoiGianViPham; }

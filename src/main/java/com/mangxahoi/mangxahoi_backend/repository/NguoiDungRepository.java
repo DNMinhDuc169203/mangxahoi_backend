@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -30,4 +31,6 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
     Page<NguoiDung> findBySoDienThoaiContaining(String soDienThoai, Pageable pageable);
     long countByBiTamKhoaTrue();
     long countByNgayTaoAfter(java.time.LocalDateTime from);
+    // Thêm method cho scheduler tự động mở khóa
+    List<NguoiDung> findAllByBiTamKhoaTrueAndNgayMoKhoaIsNotNull();
 } 

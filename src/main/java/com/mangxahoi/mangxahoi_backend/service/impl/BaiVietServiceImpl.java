@@ -458,6 +458,9 @@ public class BaiVietServiceImpl implements BaiVietService {
         // Phân trang thủ công
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), sorted.size());
+        if (start >= sorted.size()) {
+            return new org.springframework.data.domain.PageImpl<>(Collections.emptyList(), pageable, sorted.size());
+        }
         java.util.List<BaiVietDTO> pageContent = sorted.subList(start, end).stream()
             .map(baiViet -> {
                 BaiVietDTO dto = convertToDTO(baiViet);

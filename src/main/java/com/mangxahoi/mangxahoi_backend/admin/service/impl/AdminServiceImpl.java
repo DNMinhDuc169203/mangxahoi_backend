@@ -41,6 +41,7 @@ import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
 import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
 import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.admin.dto.response.BaoCaoDTO;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiViPham;
 
 @Service
 @RequiredArgsConstructor
@@ -194,6 +195,11 @@ public class AdminServiceImpl implements AdminService {
         if (request.getBaoCaoId() != null) {
             baoCao = baoCaoRepository.findById(request.getBaoCaoId()).orElse(null);
         }
+        // Validate loại vi phạm
+        LoaiViPham loaiViPham = request.getLoaiViPham();
+        if (loaiViPham == null) {
+            throw new IllegalArgumentException("Loại vi phạm không hợp lệ hoặc không được để trống!");
+        }
         // Đếm số lần vi phạm trước đó
         long soLanViPham = lichSuViPhamRepository.countByNguoiDung(nguoiDung);
         // Xác định hình phạt
@@ -229,7 +235,7 @@ public class AdminServiceImpl implements AdminService {
         LichSuViPham viPham = new LichSuViPham();
         viPham.setNguoiDung(nguoiDung);
         viPham.setNoiDungViPham(request.getNoiDungViPham());
-        viPham.setLoaiViPham(request.getLoaiViPham());
+        viPham.setLoaiViPham(loaiViPham);
         viPham.setThoiGianViPham(java.time.LocalDateTime.now());
         viPham.setHinhPhat(hinhPhat);
         viPham.setTrangThaiXuLy("Đã xử lý");
