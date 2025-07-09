@@ -71,6 +71,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public TaoCuocTroChuyenResponse taoCuocTroChuyen(TaoCuocTroChuyenRequest request) {
         List<Integer> idThanhVien = request.getIdThanhVien();
+        System.out.println("Backend nhận idThanhVien: " + idThanhVien + ", size: " + idThanhVien.size());
         if (idThanhVien == null || idThanhVien.size() < 2) {
             throw new RuntimeException("Cần ít nhất 2 thành viên để tạo cuộc trò chuyện");
         }
@@ -256,6 +257,13 @@ public class ChatServiceImpl implements ChatService {
                 response.setUrlTepTin(tinNhan.getUrlTepTin());
                 response.setDaDoc(tinNhan.getDaDoc());
                 response.setNgayTao(tinNhan.getNgayTao());
+                // Bổ sung tên và avatar người gửi
+                response.setTenNguoiGui(tinNhan.getNguoiGui().getHoTen());
+                if (tinNhan.getNguoiGui().getAnhDaiDien() != null && !tinNhan.getNguoiGui().getAnhDaiDien().isEmpty()) {
+                    response.setAnhNguoiGui(tinNhan.getNguoiGui().getAnhDaiDien().get(0).getUrl());
+                } else {
+                    response.setAnhNguoiGui(null);
+                }
                 responses.add(response);
             }
         }
@@ -307,5 +315,14 @@ public List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDu
         }
     }
     return result;
+}
+
+@Override
+public void markMessagesAsRead(Integer idCuocTroChuyen, Integer idNguoiDoc) {
+    List<TinNhan> messages = tinNhanRepository.findByCuocTroChuyenIdAndNguoiGuiIdNotAndDaDocFalse(idCuocTroChuyen, idNguoiDoc);
+    for (TinNhan msg : messages) {
+        msg.setDaDoc(true);
+        tinNhanRepository.save(msg);
+    }
 }
 }

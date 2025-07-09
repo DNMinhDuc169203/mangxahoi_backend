@@ -15,6 +15,8 @@ public class GuiTinNhanResponse {
     private Integer idTinNhan;
     private Integer idCuocTroChuyen;
     private Integer idNguoiGui;
+     private String tenNguoiGui;
+     private String anhNguoiGui;
     private String noiDung;
     private String loaiTinNhan;
     private String urlTepTin;

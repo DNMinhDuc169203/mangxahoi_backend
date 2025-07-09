@@ -91,6 +91,12 @@ public class ChatController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/tin-nhan/danh-dau-da-doc")
+    public ResponseEntity<?> markMessagesAsRead(@RequestBody MarkAsReadRequest request) {
+        chatService.markMessagesAsRead(request.getIdCuocTroChuyen(), request.getIdNguoiDoc());
+        return ResponseEntity.ok().build();
+    }
     @GetMapping("/cuoc-tro-chuyen/danh-sach")
 public List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(
     @RequestHeader("Authorization") String authorization

@@ -13,4 +13,6 @@ public interface ChatService {
     void thuHoiTinNhan(ThuHoiTinNhanRequest request);
     List<GuiTinNhanResponse> timKiemTinNhan(TimKiemTinNhanRequest request);
     List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDung);
+
+    void markMessagesAsRead(Integer idCuocTroChuyen, Integer idNguoiDoc);
 }

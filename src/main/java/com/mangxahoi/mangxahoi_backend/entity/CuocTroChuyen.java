@@ -61,7 +61,9 @@ public class CuocTroChuyen {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
         soThanhVien = 0;
-        loai = LoaiCuocTroChuyen.ca_nhan;
+        if (loai == null) {
+            loai = LoaiCuocTroChuyen.ca_nhan;
+        }
     }
 
     @PreUpdate
