@@ -14,6 +14,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import com.mangxahoi.mangxahoi_backend.service.TinNhanDaDocService;
+import com.mangxahoi.mangxahoi_backend.repository.TinNhanRepository;
+import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
+import com.mangxahoi.mangxahoi_backend.entity.TinNhan;
 
 @RestController
 @RequestMapping("/api/tinnhan")
@@ -26,6 +30,13 @@ public class ChatController {
 
     @Autowired
     private TokenUtil tokenUtil;
+
+    @Autowired
+    private TinNhanDaDocService tinNhanDaDocService;
+    @Autowired
+    private TinNhanRepository tinNhanRepository;
+    @Autowired
+    private NguoiDungRepository nguoiDungRepository;
 
     @PostMapping("/gui")
     public GuiTinNhanResponse guiTinNhan(
@@ -92,9 +103,30 @@ public class ChatController {
         }
     }
 
-    @PostMapping("/tin-nhan/danh-dau-da-doc")
-    public ResponseEntity<?> markMessagesAsRead(@RequestBody MarkAsReadRequest request) {
+    @PostMapping("/danh-dau-da-doc")
+    public ResponseEntity<?> markMessagesAsRead(
+        @RequestHeader("Authorization") String authorization,
+        @RequestBody MarkAsReadRequest request
+    ) {
+        NguoiDung nguoiDung = getUserFromToken(authorization);
+        request.setIdNguoiDoc(nguoiDung.getId());
         chatService.markMessagesAsRead(request.getIdCuocTroChuyen(), request.getIdNguoiDoc());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/nhom/danh-dau-da-doc")
+    public ResponseEntity<?> markGroupMessageAsRead(
+        @RequestHeader("Authorization") String authorization,
+        @RequestBody MarkAsReadRequest request
+    ) {
+        NguoiDung nguoiDoc = getUserFromToken(authorization);
+        // Lấy danh sách tin nhắn cần đánh dấu đã đọc (ví dụ: tất cả tin nhắn chưa đọc trong nhóm)
+        List<TinNhan> messages = tinNhanRepository.findByCuocTroChuyenIdAndNguoiGuiIdNotAndDaDocFalse(
+            request.getIdCuocTroChuyen(), nguoiDoc.getId()
+        );
+        for (TinNhan msg : messages) {
+            tinNhanDaDocService.danhDauDaDoc(msg, nguoiDoc);
+        }
         return ResponseEntity.ok().build();
     }
     @GetMapping("/cuoc-tro-chuyen/danh-sach")

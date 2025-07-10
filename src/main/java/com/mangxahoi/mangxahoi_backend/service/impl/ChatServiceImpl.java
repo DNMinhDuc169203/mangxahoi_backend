@@ -14,6 +14,8 @@ import com.mangxahoi.mangxahoi_backend.repository.TinNhanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.CuocTroChuyenRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.repository.ThanhVienCuocTroChuyenRepository;
+import com.mangxahoi.mangxahoi_backend.repository.TinNhanDaDocRepository;
+import com.mangxahoi.mangxahoi_backend.entity.TinNhanDaDoc;
 import com.mangxahoi.mangxahoi_backend.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatServiceImpl implements ChatService {
@@ -34,6 +37,8 @@ public class ChatServiceImpl implements ChatService {
     private NguoiDungRepository nguoiDungRepository;
     @Autowired
     private ThanhVienCuocTroChuyenRepository thanhVienCuocTroChuyenRepository;
+    @Autowired
+    private TinNhanDaDocRepository tinNhanDaDocRepository;
 
     @Override
     public GuiTinNhanResponse guiTinNhan(GuiTinNhanRequest request) {
@@ -229,7 +234,7 @@ public class ChatServiceImpl implements ChatService {
     public List<GuiTinNhanResponse> timKiemTinNhan(TimKiemTinNhanRequest request) {
         CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(request.getIdCuocTroChuyen())
             .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
-        
+        boolean isGroup = cuocTroChuyen.getLoai().name().equals("nhom");
         // Tạo pageable cho phân trang
         Pageable pageable = PageRequest.of(
             request.getTrang() != null ? request.getTrang() : 0,
@@ -263,6 +268,17 @@ public class ChatServiceImpl implements ChatService {
                     response.setAnhNguoiGui(tinNhan.getNguoiGui().getAnhDaiDien().get(0).getUrl());
                 } else {
                     response.setAnhNguoiGui(null);
+                }
+                // Bổ sung danh sách người đã đọc nếu là nhóm
+                if (isGroup) {
+                    List<TinNhanDaDoc> daDocList = tinNhanDaDocRepository.findByTinNhan(tinNhan);
+                    List<NguoiDocDTO> nguoiDocDTOs = daDocList.stream().map(daDoc -> NguoiDocDTO.builder()
+                        .id(daDoc.getNguoiDoc().getId())
+                        .hoTen(daDoc.getNguoiDoc().getHoTen())
+                        .anhDaiDien((daDoc.getNguoiDoc().getAnhDaiDien() != null && !daDoc.getNguoiDoc().getAnhDaiDien().isEmpty()) ? daDoc.getNguoiDoc().getAnhDaiDien().get(0).getUrl() : null)
+                        .build()
+                    ).collect(Collectors.toList());
+                    response.setDanhSachNguoiDoc(nguoiDocDTOs);
                 }
                 responses.add(response);
             }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
  @Data
  @Builder
@@ -22,4 +23,6 @@ public class GuiTinNhanResponse {
     private String urlTepTin;
     private Boolean daDoc;
     private LocalDateTime ngayTao;
+    // Thêm trường mới
+    private List<NguoiDocDTO> danhSachNguoiDoc;
 }
