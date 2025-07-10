@@ -566,6 +566,7 @@ public class BaiVietServiceImpl implements BaiVietService {
                     .collect(Collectors.toList());
         }
         dto.setHashtags(hashtags);
+        dto.setBiAn(baiViet.getBiAn());
         
         return dto;
     }
@@ -652,11 +653,31 @@ public class BaiVietServiceImpl implements BaiVietService {
         List<BaiViet> all = baiVietRepository.findAll();
         List<String> tuKhoaNhayCam = List.of("sex", "bạo lực", "đồi trụy", "nhạy cảm"); // ví dụ
         List<BaiViet> filtered = all.stream()
+            // Tìm kiếm theo nội dung
             .filter(bv -> keyword == null || bv.getNoiDung().toLowerCase().contains(keyword.toLowerCase()))
-            .filter(bv -> hashtag == null || (bv.getNoiDung() != null && bv.getNoiDung().contains("#" + hashtag)))
-            .filter(bv -> trangThai == null || (trangThai.equals("an") ? Boolean.TRUE.equals(bv.getBiAn()) : Boolean.FALSE.equals(bv.getBiAn())))
-            .filter(bv -> loai == null || (loai.equals("hashtag") ? (bv.getNoiDung() != null && bv.getNoiDung().contains("#")) : (bv.getNoiDung() != null && !bv.getNoiDung().contains("#"))))
-            .filter(bv -> sensitive == null || !sensitive || (bv.getNoiDung() != null && tuKhoaNhayCam.stream().anyMatch(tk -> bv.getNoiDung().toLowerCase().contains(tk))))
+            // Lọc theo hashtag (dựa vào bảng liên kết hashtag, tìm gần đúng)
+            .filter(bv -> hashtag == null || (bv.getHashtags() != null && bv.getHashtags().stream().anyMatch(h -> h.getTen().toLowerCase().contains(hashtag.toLowerCase()))))
+            // Lọc theo trạng thái: binh_thuong, an, xoa
+            .filter(bv -> {
+                if (trangThai == null || trangThai.isEmpty()) return true;
+                if (trangThai.equals("an")) return Boolean.TRUE.equals(bv.getBiAn());
+                if (trangThai.equals("binh_thuong")) return !Boolean.TRUE.equals(bv.getBiAn());
+                // Nếu muốn lọc đã xóa, cần bổ sung trường trạng thái xóa (hiện tại xóa là xóa cứng)
+                return true;
+            })
+            // Lọc theo loại: hashtag, thong_thuong
+            .filter(bv -> {
+                if (loai == null || loai.isEmpty()) return true;
+                if (loai.equals("hashtag")) return bv.getHashtags() != null && !bv.getHashtags().isEmpty();
+                if (loai.equals("thong_thuong")) return bv.getHashtags() == null || bv.getHashtags().isEmpty();
+                return true;
+            })
+            // Lọc theo nhạy cảm
+            .filter(bv -> {
+                if (sensitive == null) return true;
+                boolean coNhayCam = bv.getNoiDung() != null && tuKhoaNhayCam.stream().anyMatch(tk -> bv.getNoiDung().toLowerCase().contains(tk));
+                return sensitive ? coNhayCam : !coNhayCam;
+            })
             .collect(java.util.stream.Collectors.toList());
         List<BaiVietDTO> dtos = filtered.stream().map(this::convertToDTO).collect(java.util.stream.Collectors.toList());
         int start = (int) pageable.getOffset();
