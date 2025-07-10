@@ -29,4 +29,5 @@ public class BaiVietDTO {
     private List<String> mediaUrls;
     private List<String> hashtags;
     private Boolean daThich; // Đánh dấu người dùng hiện tại đã thích bài viết này chưa
+    private Boolean biAn; // Đánh dấu bài viết đã bị ẩn bởi admin
 } 
