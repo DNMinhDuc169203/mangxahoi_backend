@@ -44,11 +44,12 @@ public class SecurityConfig {
                     "/api/ket-ban/**",
                     "/{idNguoiDung}",
                     "/api/thong-bao/**",
-
-                        "/api/tinnhan/**",
-                  
+                    "/api/tinnhan/**",
                     "/api/admin/**",
-                    "/api/bao-cao/guibaocao"
+                    "/api/bao-cao/guibaocao",
+                    "/ws/chat/**",
+                    "ws/chat/info/**",
+                    "/ws/chat"
 
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("quan_tri_vien")

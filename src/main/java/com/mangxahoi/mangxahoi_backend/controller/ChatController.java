@@ -18,6 +18,8 @@ import com.mangxahoi.mangxahoi_backend.service.TinNhanDaDocService;
 import com.mangxahoi.mangxahoi_backend.repository.TinNhanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.entity.TinNhan;
+import com.mangxahoi.mangxahoi_backend.repository.CuocTroChuyenRepository;
+import com.mangxahoi.mangxahoi_backend.entity.CuocTroChuyen;
 
 @RestController
 @RequestMapping("/api/tinnhan")
@@ -37,6 +39,8 @@ public class ChatController {
     private TinNhanRepository tinNhanRepository;
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
+    @Autowired
+    private CuocTroChuyenRepository cuocTroChuyenRepository;
 
     @PostMapping("/gui")
     public GuiTinNhanResponse guiTinNhan(
@@ -120,12 +124,13 @@ public class ChatController {
         @RequestBody MarkAsReadRequest request
     ) {
         NguoiDung nguoiDoc = getUserFromToken(authorization);
-        // Lấy danh sách tin nhắn cần đánh dấu đã đọc (ví dụ: tất cả tin nhắn chưa đọc trong nhóm)
-        List<TinNhan> messages = tinNhanRepository.findByCuocTroChuyenIdAndNguoiGuiIdNotAndDaDocFalse(
-            request.getIdCuocTroChuyen(), nguoiDoc.getId()
-        );
-        for (TinNhan msg : messages) {
-            tinNhanDaDocService.danhDauDaDoc(msg, nguoiDoc);
+        CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(request.getIdCuocTroChuyen()).orElse(null);
+        if (cuocTroChuyen == null) return ResponseEntity.badRequest().body("Cuộc trò chuyện không tồn tại");
+        List<TinNhan> allMessages = tinNhanRepository.findByCuocTroChuyen(cuocTroChuyen);
+        for (TinNhan msg : allMessages) {
+            if (!tinNhanDaDocService.daDoc(msg, nguoiDoc)) {
+                tinNhanDaDocService.danhDauDaDoc(msg, nguoiDoc);
+            }
         }
         return ResponseEntity.ok().build();
     }

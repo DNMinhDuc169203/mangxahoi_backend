@@ -223,7 +223,7 @@ public class ThongBaoService {
             NguoiDung nguoiGui = nguoiDungRepository.findById(idNguoiGui).orElse(null);
             if (nguoiGui == null) return;
 
-            // Tìm người nhận (người khác trong cuộc trò chuyện)
+            // Tìm người nhận
             NguoiDung nguoiNhan = null;
             if (cuocTroChuyen.getLoai().equals("ca_nhan")) {
                 if (cuocTroChuyen.getNguoiTao().getId().equals(idNguoiGui)) {
@@ -231,8 +231,9 @@ public class ThongBaoService {
                 } else {
                     nguoiNhan = cuocTroChuyen.getNguoiTao();
                 }
+            } else if (cuocTroChuyen.getLoai().equals("nhom")) {
+                nguoiNhan = nguoiDungRepository.findById(idNguoiGui).orElse(null);
             }
-            // TODO: Xử lý cho nhóm chat
 
             if (nguoiNhan == null) return;
 
@@ -240,7 +241,7 @@ public class ThongBaoService {
                     .nguoiNhan(nguoiNhan)
                     .loai(LoaiThongBao.nhan_tin.name())
                     .tieuDe("Bạn có tin nhắn mới!")
-                    .noiDung("Người dùng " + nguoiGui.getHoTen() + " vừa gửi tin nhắn cho bạn.")
+                    .noiDung("Bạn vừa nhận được tin nhắn mới trong cuộc trò chuyện.")
                     .mucDoUuTien("cao")
                     .build();
             thongBao = thongBaoRepository.save(thongBao);

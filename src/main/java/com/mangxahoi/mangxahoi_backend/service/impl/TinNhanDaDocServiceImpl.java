@@ -35,4 +35,9 @@ public class TinNhanDaDocServiceImpl implements TinNhanDaDocService {
     public List<TinNhanDaDoc> layDanhSachNguoiDocTheoIdTinNhan(Integer tinNhanId) {
         return tinNhanDaDocRepository.findByTinNhanId(tinNhanId);
     }
+
+    @Override
+    public boolean daDoc(TinNhan tinNhan, NguoiDung nguoiDoc) {
+        return tinNhanDaDocRepository.existsByTinNhanAndNguoiDoc(tinNhan, nguoiDoc);
+    }
 } 

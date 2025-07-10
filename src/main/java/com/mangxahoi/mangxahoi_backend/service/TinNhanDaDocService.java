@@ -9,4 +9,7 @@ public interface TinNhanDaDocService {
     void danhDauDaDoc(TinNhan tinNhan, NguoiDung nguoiDoc);
     List<TinNhanDaDoc> layDanhSachNguoiDoc(TinNhan tinNhan);
     List<TinNhanDaDoc> layDanhSachNguoiDocTheoIdTinNhan(Integer tinNhanId);
+
+    // Kiểm tra đã đọc tin nhắn nhóm chưa
+    boolean daDoc(TinNhan tinNhan, NguoiDung nguoiDoc);
 } 

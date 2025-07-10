@@ -17,6 +17,7 @@ import com.mangxahoi.mangxahoi_backend.repository.ThanhVienCuocTroChuyenReposito
 import com.mangxahoi.mangxahoi_backend.repository.TinNhanDaDocRepository;
 import com.mangxahoi.mangxahoi_backend.entity.TinNhanDaDoc;
 import com.mangxahoi.mangxahoi_backend.service.ChatService;
+import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -39,6 +40,8 @@ public class ChatServiceImpl implements ChatService {
     private ThanhVienCuocTroChuyenRepository thanhVienCuocTroChuyenRepository;
     @Autowired
     private TinNhanDaDocRepository tinNhanDaDocRepository;
+    @Autowired
+    private ThongBaoService thongBaoService;
 
     @Override
     public GuiTinNhanResponse guiTinNhan(GuiTinNhanRequest request) {
@@ -60,6 +63,19 @@ public class ChatServiceImpl implements ChatService {
 
         cuocTroChuyen.setTinNhanCuoi(tinNhan.getNgayTao());
         cuocTroChuyenRepository.save(cuocTroChuyen);
+
+        // Gửi thông báo tin nhắn mới
+        if (cuocTroChuyen.getLoai().name().equals("ca_nhan")) {
+            thongBaoService.guiThongBaoTinNhan(nguoiGui.getId(), tinNhan.getId(), cuocTroChuyen.getId());
+        } else if (cuocTroChuyen.getLoai().name().equals("nhom")) {
+            // Gửi thông báo cho tất cả thành viên nhóm (trừ người gửi)
+            List<ThanhVienCuocTroChuyen> members = thanhVienCuocTroChuyenRepository.findByCuocTroChuyen(cuocTroChuyen);
+            for (ThanhVienCuocTroChuyen tv : members) {
+                if (!tv.getNguoiDung().getId().equals(nguoiGui.getId())) {
+                    thongBaoService.guiThongBaoTinNhan(tv.getNguoiDung().getId(), tinNhan.getId(), cuocTroChuyen.getId());
+                }
+            }
+        }
 
         GuiTinNhanResponse response = new GuiTinNhanResponse();
         response.setIdTinNhan(tinNhan.getId());
@@ -296,6 +312,21 @@ public List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDu
     List<TaoCuocTroChuyenResponse> result = new ArrayList<>();
     for (ThanhVienCuocTroChuyen tv : thanhVienList) {
         CuocTroChuyen cuoc = tv.getCuocTroChuyen();
+        // Lấy tin nhắn cuối cùng
+        TinNhan lastMsg = tinNhanRepository.findByCuocTroChuyenOrderByNgayTaoDesc(cuoc, org.springframework.data.domain.PageRequest.of(0, 1))
+            .stream().findFirst().orElse(null);
+        String lastContent = lastMsg != null ? lastMsg.getNoiDung() : null;
+        String lastType = lastMsg != null && lastMsg.getLoaiTinNhan() != null ? lastMsg.getLoaiTinNhan().name() : null;
+        Integer lastSenderId = lastMsg != null && lastMsg.getNguoiGui() != null ? lastMsg.getNguoiGui().getId() : null;
+        String lastSenderName = lastMsg != null && lastMsg.getNguoiGui() != null ? lastMsg.getNguoiGui().getHoTen() : null;
+        LocalDateTime lastTime = lastMsg != null ? lastMsg.getNgayTao() : null;
+        // Đếm số tin nhắn chưa đọc
+        long unreadCount;
+        if (cuoc.getLoai().name().equals("nhom")) {
+            unreadCount = tinNhanDaDocRepository.countUnreadGroupMessagesByConversation(cuoc, nguoiDung);
+        } else {
+            unreadCount = tinNhanRepository.countUnreadMessagesByConversation(cuoc, nguoiDung);
+        }
         // Nếu là chat cá nhân, lấy thông tin đối phương
         if (cuoc.getLoai().name().equals("ca_nhan")) {
             List<ThanhVienCuocTroChuyen> members = thanhVienCuocTroChuyenRepository.findByCuocTroChuyen(cuoc);
@@ -317,6 +348,13 @@ public List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDu
                         ? doiPhuong.getAnhDaiDien().get(0).getUrl()
                         : null
                 )
+                .tinNhanCuoi(cuoc.getTinNhanCuoi())
+                .lastMessageContent(lastContent)
+                .lastMessageType(lastType)
+                .lastMessageSenderId(lastSenderId)
+                .lastMessageSenderName(lastSenderName)
+                .lastMessageTime(lastTime)
+                .unreadCount(unreadCount)
                 .build());
         } else {
             // Nếu là nhóm
@@ -326,10 +364,24 @@ public List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDu
                 .tenNhom(cuoc.getTenNhom())
                 .anhNhom(cuoc.getAnhNhom())
                 .idNguoiTao(cuoc.getNguoiTao() != null ? cuoc.getNguoiTao().getId() : null)
-                .idThanhVien(null) // hoặc danh sách id thành viên nếu muốn
+                .idThanhVien(null)
+                .tinNhanCuoi(cuoc.getTinNhanCuoi())
+                .lastMessageContent(lastContent)
+                .lastMessageType(lastType)
+                .lastMessageSenderId(lastSenderId)
+                .lastMessageSenderName(lastSenderName)
+                .lastMessageTime(lastTime)
+                .unreadCount(unreadCount)
                 .build());
         }
     }
+    // Sắp xếp giảm dần theo tinNhanCuoi (null sẽ ở cuối)
+    result.sort((a, b) -> {
+        if (a.getTinNhanCuoi() == null && b.getTinNhanCuoi() == null) return 0;
+        if (a.getTinNhanCuoi() == null) return 1;
+        if (b.getTinNhanCuoi() == null) return -1;
+        return b.getTinNhanCuoi().compareTo(a.getTinNhanCuoi());
+    });
     return result;
 }
 
