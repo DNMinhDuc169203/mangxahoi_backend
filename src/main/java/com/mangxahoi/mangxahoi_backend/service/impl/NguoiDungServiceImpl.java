@@ -5,6 +5,7 @@ import com.mangxahoi.mangxahoi_backend.dto.response.DangNhapResponse;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungAnhDTO;
 import com.mangxahoi.mangxahoi_backend.dto.request.PrivacySettingsRequest;
+import com.mangxahoi.mangxahoi_backend.dto.response.LichSuGoiYDTO;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
 import com.mangxahoi.mangxahoi_backend.entity.PhienDangNhapNguoiDung;
@@ -16,6 +17,7 @@ import com.mangxahoi.mangxahoi_backend.repository.NguoiDungAnhRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.repository.PhienDangNhapNguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.repository.KetBanRepository;
+import com.mangxahoi.mangxahoi_backend.repository.LichSuGoiYRepository;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
 import com.mangxahoi.mangxahoi_backend.service.NguoiDungService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
@@ -47,6 +49,7 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
     private final TokenUtil tokenUtil;
+    private final LichSuGoiYRepository lichSuGoiYRepository;
 
     @Override
     @Transactional
@@ -581,5 +584,23 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     public Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable) {
         Page<NguoiDung> page = nguoiDungRepository.findBySoDienThoaiContaining(soDienThoai, pageable);
         return page.map(this::chuyenSangDTO);
+    }
+
+    @Override
+    public List<LichSuGoiYDTO> layGoiYKetBan(String token) {
+        NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+        return lichSuGoiYRepository.findByNguoiDuocGoiY(nguoiDung)
+                .stream()
+                .map(ls -> LichSuGoiYDTO.builder()
+                        .id(ls.getId())
+                        .nguoiTrongGoiY(ls.getNguoiTrongGoiY() != null ? chuyenSangDTO(ls.getNguoiTrongGoiY()) : null)
+                        .diemGoiY(ls.getDiemGoiY())
+                        .lyDoGoiY(ls.getLyDoGoiY())
+                        .daGuiLoiMoi(ls.getDaGuiLoiMoi())
+                        .daBoQua(ls.getDaBoQua())
+                        .daChan(ls.getDaChan())
+                        .ngayGoiY(ls.getNgayGoiY())
+                        .build())
+                .toList();
     }
 }

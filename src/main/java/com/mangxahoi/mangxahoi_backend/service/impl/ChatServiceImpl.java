@@ -191,19 +191,24 @@ public class ChatServiceImpl implements ChatService {
             throw new RuntimeException("Chỉ có thể thêm thành viên vào cuộc trò chuyện nhóm");
         }
         
-        // Kiểm tra người thực hiện có quyền không (phải là quản trị viên)
+        // Kiểm tra người thực hiện có quyền không (phải là quản trị viên hoặc người tạo nhóm)
         ThanhVienCuocTroChuyen nguoiThucHien = thanhVienCuocTroChuyenRepository
             .findByCuocTroChuyenAndNguoiDung(cuocTroChuyen, 
                 nguoiDungRepository.findById(request.getIdNguoiThucHien())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy người thực hiện")))
             .orElseThrow(() -> new RuntimeException("Người thực hiện không phải thành viên của nhóm"));
-        
-        if (nguoiThucHien.getVaiTro() != VaiTroThanhVien.quan_tri) {
-            throw new RuntimeException("Chỉ quản trị viên mới có quyền thêm thành viên");
+        boolean isAdmin = nguoiThucHien.getVaiTro() == VaiTroThanhVien.quan_tri;
+        boolean isCreator = cuocTroChuyen.getNguoiTao() != null && cuocTroChuyen.getNguoiTao().getId().equals(request.getIdNguoiThucHien());
+        if (!isAdmin && !isCreator) {
+            throw new RuntimeException("Chỉ quản trị viên hoặc người tạo nhóm mới có quyền thêm thành viên");
         }
         
         // Thêm từng thành viên mới
-        for (Integer idThanhVienMoi : request.getIdThanhVienMoi()) {
+        List<Integer> idThanhVienMoiList = request.getIdThanhVienMoi();
+        if (idThanhVienMoiList == null || idThanhVienMoiList.isEmpty()) {
+            throw new RuntimeException("Danh sách thành viên mới không được để trống");
+        }
+        for (Integer idThanhVienMoi : idThanhVienMoiList) {
             NguoiDung thanhVienMoi = nguoiDungRepository.findById(idThanhVienMoi)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với id: " + idThanhVienMoi));
             
@@ -358,13 +363,24 @@ public List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDu
                 .build());
         } else {
             // Nếu là nhóm
+            List<ThanhVienCuocTroChuyen> members = thanhVienCuocTroChuyenRepository.findByCuocTroChuyen(cuoc);
+            // Danh sách thành viên chi tiết
+            List<NguoiDungDTO> danhSachThanhVien = members.stream().map(thanhVien -> NguoiDungDTO.builder()
+                .id(thanhVien.getNguoiDung().getId())
+                .hoTen(thanhVien.getNguoiDung().getHoTen())
+                .anhDaiDien((thanhVien.getNguoiDung().getAnhDaiDien() != null && !thanhVien.getNguoiDung().getAnhDaiDien().isEmpty()) ? thanhVien.getNguoiDung().getAnhDaiDien().get(0).getUrl() : null)
+                .build()
+            ).toList();
+            Integer truongNhomId = cuoc.getNguoiTao() != null ? cuoc.getNguoiTao().getId() : null;
             result.add(TaoCuocTroChuyenResponse.builder()
                 .idCuocTroChuyen(cuoc.getId())
                 .loai(cuoc.getLoai().name())
                 .tenNhom(cuoc.getTenNhom())
                 .anhNhom(cuoc.getAnhNhom())
-                .idNguoiTao(cuoc.getNguoiTao() != null ? cuoc.getNguoiTao().getId() : null)
-                .idThanhVien(null)
+                .idNguoiTao(truongNhomId)
+                .idThanhVien(members.stream().map(m -> m.getNguoiDung().getId()).toList())
+                .danhSachThanhVien(danhSachThanhVien)
+                .idTruongNhom(truongNhomId)
                 .tinNhanCuoi(cuoc.getTinNhanCuoi())
                 .lastMessageContent(lastContent)
                 .lastMessageType(lastType)

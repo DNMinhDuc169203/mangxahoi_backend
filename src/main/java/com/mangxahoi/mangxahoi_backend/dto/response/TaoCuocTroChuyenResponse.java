@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.time.LocalDateTime;
+import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 
 @Data
 @Builder
@@ -34,4 +35,8 @@ public class TaoCuocTroChuyenResponse {
 
     // Số tin nhắn chưa đọc đối với user hiện tại
     private long unreadCount;
+
+    // Thêm hai trường này để hỗ trợ nhóm
+    private List<NguoiDungDTO> danhSachThanhVien;
+    private Integer idTruongNhom;
 }

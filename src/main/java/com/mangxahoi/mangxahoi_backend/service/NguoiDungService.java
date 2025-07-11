@@ -4,11 +4,13 @@ import com.mangxahoi.mangxahoi_backend.dto.request.DangNhapRequest;
 import com.mangxahoi.mangxahoi_backend.dto.response.DangNhapResponse;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.dto.request.PrivacySettingsRequest;
+import com.mangxahoi.mangxahoi_backend.dto.response.LichSuGoiYDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 public interface NguoiDungService {
@@ -87,4 +89,11 @@ public interface NguoiDungService {
     NguoiDungDTO capNhatCaiDatRiengTu(String token, PrivacySettingsRequest request);
 
     Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable);
+
+    /**
+     * Lấy danh sách gợi ý kết bạn cho người dùng hiện tại
+     * @param token Token xác thực
+     * @return Danh sách gợi ý kết bạn
+     */
+    List<LichSuGoiYDTO> layGoiYKetBan(String token);
 } 

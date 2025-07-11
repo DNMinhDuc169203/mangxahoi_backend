@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungAnhDTO;
 import com.mangxahoi.mangxahoi_backend.dto.request.PrivacySettingsRequest;
+import com.mangxahoi.mangxahoi_backend.dto.response.LichSuGoiYDTO;
 
 @RestController
 @RequestMapping("/api/nguoi-dung")
@@ -363,5 +364,15 @@ public class NguoiDungController {
             errorResponse.put("message", "Lỗi khi cập nhật cài đặt riêng tư: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/goi-y-ket-ban")
+    public ResponseEntity<List<LichSuGoiYDTO>> layGoiYKetBan(@RequestHeader("Authorization") String authorization) {
+        String token = authorization;
+        if (authorization.startsWith("Bearer ")) {
+            token = authorization.substring(7);
+        }
+        List<LichSuGoiYDTO> goiYList = nguoiDungService.layGoiYKetBan(token);
+        return ResponseEntity.ok(goiYList);
     }
 } 

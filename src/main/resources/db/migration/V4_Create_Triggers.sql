@@ -117,7 +117,7 @@ END;
 
 -- Trigger để cập nhật số bạn bè khi kết bạn
 DROP TRIGGER IF EXISTS update_friend_count;
-DELIMITER //
+
 CREATE TRIGGER update_friend_count AFTER UPDATE ON ket_ban
 FOR EACH ROW
 BEGIN
@@ -126,29 +126,25 @@ BEGIN
         SET so_ban_be = so_ban_be + 1
         WHERE id = NEW.id_nguoi_gui OR id = NEW.id_nguoi_nhan;
     END IF;
-END //
-DELIMITER ;
+END;
 
 -- Trigger để cập nhật số thành viên cuộc trò chuyện
 DROP TRIGGER IF EXISTS update_chat_member_count;
-DELIMITER //
 CREATE TRIGGER update_chat_member_count AFTER INSERT ON thanh_vien_cuoc_tro_chuyen
 FOR EACH ROW
 BEGIN
     UPDATE cuoc_tro_chuyen 
     SET so_thanh_vien = (SELECT COUNT(*) FROM thanh_vien_cuoc_tro_chuyen WHERE id_cuoc_tro_chuyen = NEW.id_cuoc_tro_chuyen)
     WHERE id = NEW.id_cuoc_tro_chuyen;
-END //
-DELIMITER ;
+END;
+
 
 -- Trigger để cập nhật số thành viên khi xóa thành viên
 DROP TRIGGER IF EXISTS update_chat_member_delete;
-DELIMITER //
 CREATE TRIGGER update_chat_member_delete AFTER DELETE ON thanh_vien_cuoc_tro_chuyen
 FOR EACH ROW
 BEGIN
     UPDATE cuoc_tro_chuyen 
     SET so_thanh_vien = so_thanh_vien - 1
     WHERE id = OLD.id_cuoc_tro_chuyen;
-END //
-DELIMITER ; 
+END;

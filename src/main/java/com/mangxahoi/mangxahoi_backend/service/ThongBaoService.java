@@ -1,6 +1,7 @@
 package com.mangxahoi.mangxahoi_backend.service;
 
 import com.mangxahoi.mangxahoi_backend.dto.request.GuiThongBaoRequest;
+import com.mangxahoi.mangxahoi_backend.dto.ThongBaoDTO;
 import com.mangxahoi.mangxahoi_backend.entity.*;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiTuongTacThongBao;
@@ -23,6 +24,7 @@ public class ThongBaoService {
     private final KetBanRepository ketBanRepository;
     private final TinNhanRepository tinNhanRepository;
     private final CuocTroChuyenRepository cuocTroChuyenRepository;
+    private final NotificationWebSocketService notificationWebSocketService;
 
     /**
      * Gửi thông báo khi có người thích bài viết
@@ -57,6 +59,9 @@ public class ThongBaoService {
                     .noiDungTuongTac("Đã thích bài viết của bạn")
                     .build();
             thongBaoTuongTacRepository.save(tbt);
+            // Gửi notification real-time
+            ThongBaoDTO thongBaoDTO = toThongBaoDTO(thongBao, nguoiThich, baiViet, null, null);
+            notificationWebSocketService.sendNotificationToUser(baiViet.getNguoiDung().getId(), thongBaoDTO);
         } catch (Exception e) {
             // Log lỗi nhưng không throw để không ảnh hưởng đến luồng chính
             System.err.println("Lỗi gửi thông báo thích bài viết: " + e.getMessage());
@@ -96,6 +101,9 @@ public class ThongBaoService {
                     .noiDungTuongTac("Đã thích bình luận của bạn")
                     .build();
             thongBaoTuongTacRepository.save(tbt);
+            // Gửi notification real-time
+            ThongBaoDTO thongBaoDTO = toThongBaoDTO(thongBao, nguoiThich, binhLuan.getBaiViet(), binhLuan, null);
+            notificationWebSocketService.sendNotificationToUser(binhLuan.getNguoiDung().getId(), thongBaoDTO);
         } catch (Exception e) {
             System.err.println("Lỗi gửi thông báo thích bình luận: " + e.getMessage());
         }
@@ -134,6 +142,9 @@ public class ThongBaoService {
                     .noiDungTuongTac("Đã bình luận vào bài viết của bạn")
                     .build();
             thongBaoTuongTacRepository.save(tbt);
+            // Gửi notification real-time
+            ThongBaoDTO thongBaoDTO = toThongBaoDTO(thongBao, nguoiBinhLuan, baiViet, null, null);
+            notificationWebSocketService.sendNotificationToUser(baiViet.getNguoiDung().getId(), thongBaoDTO);
         } catch (Exception e) {
             System.err.println("Lỗi gửi thông báo bình luận: " + e.getMessage());
         }
@@ -172,6 +183,9 @@ public class ThongBaoService {
                     .noiDungTuongTac("Đã trả lời bình luận của bạn")
                     .build();
             thongBaoTuongTacRepository.save(tbt);
+            // Gửi notification real-time
+            ThongBaoDTO thongBaoDTO = toThongBaoDTO(thongBao, nguoiTraLoi, binhLuanCha.getBaiViet(), binhLuanCha, null);
+            notificationWebSocketService.sendNotificationToUser(binhLuanCha.getNguoiDung().getId(), thongBaoDTO);
         } catch (Exception e) {
             System.err.println("Lỗi gửi thông báo trả lời bình luận: " + e.getMessage());
         }
@@ -205,6 +219,9 @@ public class ThongBaoService {
                     .loaiKetBan("moi_ket_ban")
                     .build();
             thongBaoKetBanRepository.save(tbkb);
+            // Gửi notification real-time
+            ThongBaoDTO thongBaoDTO = toThongBaoDTO(thongBao, nguoiGui, null, null, ketBan);
+            notificationWebSocketService.sendNotificationToUser(ketBan.getNguoiNhan().getId(), thongBaoDTO);
         } catch (Exception e) {
             System.err.println("Lỗi gửi thông báo lời mời kết bạn: " + e.getMessage());
         }
@@ -252,6 +269,9 @@ public class ThongBaoService {
                     .tinNhan(tinNhan)
                     .build();
             thongBaoTinNhanRepository.save(tbtn);
+            // Gửi notification real-time
+            ThongBaoDTO thongBaoDTO = toThongBaoDTO(thongBao, nguoiGui, null, null, null);
+            notificationWebSocketService.sendNotificationToUser(nguoiNhan.getId(), thongBaoDTO);
         } catch (Exception e) {
             System.err.println("Lỗi gửi thông báo tin nhắn: " + e.getMessage());
         }
@@ -286,5 +306,38 @@ public class ThongBaoService {
                 .mucDoUuTien("trung_binh")
                 .build();
         thongBaoRepository.save(thongBao);
+    }
+
+    private ThongBaoDTO toThongBaoDTO(ThongBao thongBao, NguoiDung nguoiGui, BaiViet baiViet, BinhLuan binhLuan, KetBan ketBan) {
+        ThongBaoDTO dto = new ThongBaoDTO();
+        dto.setId(thongBao.getId());
+        dto.setAnhDaiDienNguoiGui(
+            nguoiGui != null && nguoiGui.getAnhDaiDien() != null && !nguoiGui.getAnhDaiDien().isEmpty()
+                ? nguoiGui.getAnhDaiDien().get(0).getUrl() // hoặc getPath(), getLink()
+                : null
+        );
+        dto.setLoai(thongBao.getLoai());
+        dto.setTieuDe(thongBao.getTieuDe());
+        dto.setNoiDung(thongBao.getNoiDung());
+        dto.setDaDoc(thongBao.getDaDoc());
+        dto.setMucDoUuTien(thongBao.getMucDoUuTien());
+        dto.setNgayTao(thongBao.getNgayTao());
+        dto.setNguoiNhanId(thongBao.getNguoiNhan() != null ? thongBao.getNguoiNhan().getId() : null);
+        dto.setNguoiNhanTen(thongBao.getNguoiNhan() != null ? thongBao.getNguoiNhan().getHoTen() : null);
+        if (baiViet != null) {
+            dto.setIdBaiViet(baiViet.getId());
+            dto.setNoiDungBaiViet(baiViet.getNoiDung());
+        }
+        if (binhLuan != null) {
+            dto.setIdBinhLuan(binhLuan.getId());
+        }
+        if (ketBan != null) {
+            dto.setIdKetBan(ketBan.getId());
+        }
+        if (nguoiGui != null) {
+            dto.setIdNguoiGui(nguoiGui.getId());
+            dto.setTenNguoiGui(nguoiGui.getHoTen());
+        }
+        return dto;
     }
 } 
