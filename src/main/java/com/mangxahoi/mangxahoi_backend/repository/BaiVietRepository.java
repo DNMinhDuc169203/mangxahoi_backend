@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -32,6 +33,8 @@ public interface BaiVietRepository extends JpaRepository<BaiViet, Integer> {
 
     @Query("SELECT b FROM BaiViet b ORDER BY b.ngayTao DESC")
     List<BaiViet> findTop5ByOrderByNgayTaoDesc(Pageable pageable);
+
+    List<BaiViet> findByNgayTaoAfter(LocalDateTime ngayTao);
 
     long countByNgayTaoAfter(java.time.LocalDateTime from);
 }

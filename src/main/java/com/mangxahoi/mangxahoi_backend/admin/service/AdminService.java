@@ -27,7 +27,7 @@ public interface AdminService {
     
     void moKhoaTaiKhoan(Integer id);
     
-    Page<Object> danhSachBaoCao(String trangThai, Pageable pageable);
+    Page<BaoCaoDTO> danhSachBaoCao(String trangThai, org.springframework.data.domain.Pageable pageable);
     
     void xuLyBaoCao(Integer id, String trangThai, String ghiChu);
 
@@ -41,4 +41,6 @@ public interface AdminService {
     ThongTinViPhamNguoiDungDTO thongTinViPhamNguoiDung(Integer userId);
 
     List<BaoCaoDTO> findTop5BaoCaoMoiNhat();
+
+    void logout(String token);
 }

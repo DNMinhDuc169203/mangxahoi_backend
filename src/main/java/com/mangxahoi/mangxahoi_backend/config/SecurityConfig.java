@@ -26,6 +26,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
+                    "/api/chinh-sach/moi-nhat",
                     "/api/nguoi-dung/**",
                     "/api/nguoi-dung/dang-ky", 
                     "/api/nguoi-dung/dang-nhap", 

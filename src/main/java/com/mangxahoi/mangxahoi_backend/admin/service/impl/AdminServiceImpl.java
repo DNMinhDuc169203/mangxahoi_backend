@@ -42,6 +42,11 @@ import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
 import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.admin.dto.response.BaoCaoDTO;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiViPham;
+import com.mangxahoi.mangxahoi_backend.entity.BaiViet;
+import com.mangxahoi.mangxahoi_backend.entity.BinhLuan;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -111,8 +116,33 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public ThongKeResponse layThongKeTongQuat() {
-        // Lấy thời điểm đầu tuần (thứ 2)
         LocalDateTime startOfWeek = LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay();
+
+        // Lấy tất cả bài viết trong tuần này
+        List<BaiViet> baiVietsTuanNay = baiVietRepository.findByNgayTaoAfter(startOfWeek);
+
+        // Đếm hashtag
+        Map<String, Integer> hashtagCount = new HashMap<>();
+        for (BaiViet bv : baiVietsTuanNay) {
+            if (bv.getHashtags() != null) {
+                for (var hashtag : bv.getHashtags()) {
+                    String ten = hashtag.getTen().toLowerCase();
+                    hashtagCount.put(ten, hashtagCount.getOrDefault(ten, 0) + 1);
+                }
+            }
+        }
+
+        // Tìm hashtag phổ biến nhất
+        String hashtagPhoThong = "Chưa có dữ liệu";
+        int soLanHashtagPhoThong = 0;
+        if (!hashtagCount.isEmpty()) {
+            var entry = hashtagCount.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .get();
+            hashtagPhoThong = entry.getKey();
+            soLanHashtagPhoThong = entry.getValue();
+        }
+
         return ThongKeResponse.builder()
                 .tongSoNguoiDung(nguoiDungRepository.count())
                 .nguoiDungMoi(nguoiDungRepository.countByNgayTaoAfter(startOfWeek))
@@ -123,7 +153,7 @@ public class AdminServiceImpl implements AdminService {
                 .tongSoBaoCao(baoCaoRepository.count())
                 .baoCaoChuaXuLy(baoCaoRepository.countByTrangThai(com.mangxahoi.mangxahoi_backend.enums.TrangThaiBaoCao.cho_xu_ly))
                 .nguoiDungBiKhoa(nguoiDungRepository.countByBiTamKhoaTrue())
-                .trendTuanNay(new ThongKeResponse.ThongKeTrend("Chưa có dữ liệu", 0, 0, 0))
+                .trendTuanNay(new ThongKeResponse.ThongKeTrend(hashtagPhoThong, soLanHashtagPhoThong, 0, 0))
                 .build();
     }
 
@@ -166,14 +196,118 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public Page<Object> danhSachBaoCao(String trangThai, Pageable pageable) {
-        // Giả lập trả về dữ liệu rỗng
-        return Page.empty();
+    public Page<BaoCaoDTO> danhSachBaoCao(String trangThai, Pageable pageable) {
+        Page<BaoCao> page;
+        if (trangThai != null && !trangThai.isEmpty()) {
+            try {
+                page = baoCaoRepository.findByTrangThai(
+                    com.mangxahoi.mangxahoi_backend.enums.TrangThaiBaoCao.valueOf(trangThai), pageable);
+            } catch (Exception e) {
+                return Page.empty(); // hoặc có thể throw exception nếu muốn
+            }
+        } else {
+            page = baoCaoRepository.findAll(pageable);
+        }
+        return page.map(bc -> {
+            com.mangxahoi.mangxahoi_backend.admin.dto.response.BaoCaoDTO dto = new com.mangxahoi.mangxahoi_backend.admin.dto.response.BaoCaoDTO();
+            dto.setId(bc.getId());
+            dto.setLoaiBaoCao(bc.getLyDo() != null ? bc.getLyDo().toString() : null);
+            dto.setNoiDung(bc.getMoTa());
+            dto.setNgayTao(bc.getNgayTao());
+            dto.setTenNguoiBaoCao(bc.getNguoiBaoCao() != null ? bc.getNguoiBaoCao().getHoTen() : null);
+            if (bc.getBaiViet() != null) {
+                dto.setLoaiDoiTuongBiBaoCao("BÀI VIẾT");
+                dto.setTenNguoiBiBaoCao(bc.getBaiViet().getNguoiDung() != null ? bc.getBaiViet().getNguoiDung().getHoTen() : null);
+                dto.setNoiDungDoiTuongBiBaoCao(bc.getBaiViet().getNoiDung());
+            } else if (bc.getBinhLuan() != null) {
+                dto.setLoaiDoiTuongBiBaoCao("BÌNH LUẬN");
+                dto.setTenNguoiBiBaoCao(bc.getBinhLuan().getNguoiDung() != null ? bc.getBinhLuan().getNguoiDung().getHoTen() : null);
+                dto.setNoiDungDoiTuongBiBaoCao(bc.getBinhLuan().getNoiDung());
+            } else if (bc.getNguoiDungBiBaoCao() != null) {
+                dto.setLoaiDoiTuongBiBaoCao("NGƯỜI DÙNG");
+                dto.setTenNguoiBiBaoCao(bc.getNguoiDungBiBaoCao().getHoTen());
+                dto.setNoiDungDoiTuongBiBaoCao(null);
+            } else {
+                dto.setLoaiDoiTuongBiBaoCao("KHÔNG XÁC ĐỊNH");
+                dto.setTenNguoiBiBaoCao(null);
+                dto.setNoiDungDoiTuongBiBaoCao(null);
+            }
+            dto.setTrangThai(bc.getTrangThai() != null ? bc.getTrangThai().toString() : null);
+            dto.setNgayGui(bc.getNgayTao());
+            return dto;
+        });
     }
 
     @Override
+    @Transactional
     public void xuLyBaoCao(Integer id, String trangThai, String ghiChu) {
-        // Giả lập xử lý báo cáo
+        BaoCao baoCao = baoCaoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy báo cáo với id: " + id));
+        baoCao.setTrangThai(com.mangxahoi.mangxahoi_backend.enums.TrangThaiBaoCao.valueOf(trangThai));
+        baoCao.setGhiChuXuLy(ghiChu);
+        baoCao.setNgayXuLy(java.time.LocalDateTime.now());
+        baoCaoRepository.save(baoCao);
+
+        // Gửi thông báo và xử lý đối tượng
+        try {
+            if ("da_xu_ly".equals(trangThai)) {
+                // Gửi thông báo cho người báo cáo
+                if (baoCao.getNguoiBaoCao() != null) {
+                    thongBaoService.guiThongBaoHeThong(
+                        baoCao.getNguoiBaoCao().getId(),
+                        "Báo cáo đã được xử lý",
+                        "Cảm ơn bạn đã báo cáo. Báo cáo của bạn đã được xử lý!"
+                    );
+                }
+                // Xử lý đối tượng bị báo cáo
+                if (baoCao.getBaiViet() != null) {
+                    // Ẩn bài viết
+                    BaiViet baiViet = baoCao.getBaiViet();
+                    baiViet.setBiAn(true);
+                    baiVietRepository.save(baiViet);
+                    // Thông báo cho chủ bài viết
+                    if (baiViet.getNguoiDung() != null) {
+                        thongBaoService.guiThongBaoHeThong(
+                            baiViet.getNguoiDung().getId(),
+                            "Bài viết bị ẩn",
+                            "Bài viết của bạn đã bị ẩn do vi phạm tiêu chuẩn cộng đồng."
+                        );
+                    }
+                } else if (baoCao.getBinhLuan() != null) {
+                    // Ẩn bình luận
+                    BinhLuan binhLuan = baoCao.getBinhLuan();
+                    binhLuan.setBiAn(true);
+                    binhLuanRepository.save(binhLuan);
+                    // Thông báo cho chủ bình luận
+                    if (binhLuan.getNguoiDung() != null) {
+                        thongBaoService.guiThongBaoHeThong(
+                            binhLuan.getNguoiDung().getId(),
+                            "Bình luận bị ẩn",
+                            "Bình luận của bạn đã bị ẩn do vi phạm tiêu chuẩn cộng đồng."
+                        );
+                    }
+                } else if (baoCao.getNguoiDungBiBaoCao() != null) {
+                    // Cảnh báo người bị báo cáo
+                    NguoiDung nguoiBiBaoCao = baoCao.getNguoiDungBiBaoCao();
+                    thongBaoService.guiThongBaoHeThong(
+                        nguoiBiBaoCao.getId(),
+                        "Bạn bị cảnh báo",
+                        "Bạn đã bị cảnh báo do vi phạm tiêu chuẩn cộng đồng."
+                    );
+                }
+            } else if ("tu_choi".equals(trangThai)) {
+                // Gửi thông báo cho người báo cáo
+                if (baoCao.getNguoiBaoCao() != null) {
+                    thongBaoService.guiThongBaoHeThong(
+                        baoCao.getNguoiBaoCao().getId(),
+                        "Báo cáo bị từ chối",
+                        "Báo cáo của bạn đã bị từ chối. Nếu có thắc mắc, vui lòng liên hệ admin."
+                    );
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi gửi thông báo hoặc xử lý đối tượng báo cáo: " + e.getMessage());
+        }
     }
     
     @Override
@@ -287,6 +421,11 @@ public class AdminServiceImpl implements AdminService {
             dto.setTenNguoiBiBaoCao(bc.getNguoiDungBiBaoCao() != null ? bc.getNguoiDungBiBaoCao().getHoTen() : null);
             return dto;
         }).toList();
+    }
+
+    @Override
+    public void logout(String token) {
+        phienDangNhapRepository.deleteByMaPhien(token);
     }
 
     private NguoiDungDTO chuyenSangDTO(NguoiDung nguoiDung) {
