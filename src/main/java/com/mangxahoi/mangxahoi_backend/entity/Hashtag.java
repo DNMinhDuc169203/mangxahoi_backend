@@ -32,6 +32,18 @@ public class Hashtag {
     @Column(name = "ngay_tao")
     private LocalDateTime ngayTao;
 
+    @Column(name = "uu_tien")
+    private Boolean uuTien;
+
+    @Column(name = "thoi_gian_uu_tien_bat_dau")
+    private LocalDateTime thoiGianUuTienBatDau;
+
+    @Column(name = "thoi_gian_uu_tien_ket_thuc")
+    private LocalDateTime thoiGianUuTienKetThuc;
+
+    @Column(name = "mo_ta_uu_tien", columnDefinition = "TEXT")
+    private String moTaUuTien;
+
     @ManyToMany(mappedBy = "hashtags")
     private List<BaiViet> baiViets;
 
@@ -40,5 +52,6 @@ public class Hashtag {
         ngayTao = LocalDateTime.now();
         soLanSuDung = 0;
         dangXuHuong = false;
+        uuTien = false;
     }
 } 

@@ -9,6 +9,10 @@ public class BaoCaoDTO {
     private LocalDateTime ngayTao;
     private String tenNguoiBaoCao;
     private String tenNguoiBiBaoCao;
+    private String trangThai;
+    private LocalDateTime ngayGui;
+    private String loaiDoiTuongBiBaoCao;
+    private String noiDungDoiTuongBiBaoCao;
     // Có thể bổ sung thêm trường nếu cần
 
     public BaoCaoDTO() {}
@@ -34,4 +38,12 @@ public class BaoCaoDTO {
     public void setTenNguoiBaoCao(String tenNguoiBaoCao) { this.tenNguoiBaoCao = tenNguoiBaoCao; }
     public String getTenNguoiBiBaoCao() { return tenNguoiBiBaoCao; }
     public void setTenNguoiBiBaoCao(String tenNguoiBiBaoCao) { this.tenNguoiBiBaoCao = tenNguoiBiBaoCao; }
+    public String getTrangThai() { return trangThai; }
+    public void setTrangThai(String trangThai) { this.trangThai = trangThai; }
+    public LocalDateTime getNgayGui() { return ngayGui; }
+    public void setNgayGui(LocalDateTime ngayGui) { this.ngayGui = ngayGui; }
+    public String getLoaiDoiTuongBiBaoCao() { return loaiDoiTuongBiBaoCao; }
+    public void setLoaiDoiTuongBiBaoCao(String loaiDoiTuongBiBaoCao) { this.loaiDoiTuongBiBaoCao = loaiDoiTuongBiBaoCao; }
+    public String getNoiDungDoiTuongBiBaoCao() { return noiDungDoiTuongBiBaoCao; }
+    public void setNoiDungDoiTuongBiBaoCao(String noiDungDoiTuongBiBaoCao) { this.noiDungDoiTuongBiBaoCao = noiDungDoiTuongBiBaoCao; }
 } 

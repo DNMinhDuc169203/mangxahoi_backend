@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "bai_viet_hashtag")
 @Data
@@ -24,4 +26,12 @@ public class BaiVietHashtag {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_hashtag", nullable = false)
     private Hashtag hashtag;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 } 

@@ -44,6 +44,16 @@ public class BinhLuan {
     @Column(name = "ngay_cap_nhat")
     private LocalDateTime ngayCapNhat;
 
+    private Boolean biAn = false;
+
+    public Boolean getBiAn() {
+        return biAn;
+    }
+
+    public void setBiAn(Boolean biAn) {
+        this.biAn = biAn;
+    }
+
     @PrePersist
     protected void onCreate() {
         ngayTao = LocalDateTime.now();

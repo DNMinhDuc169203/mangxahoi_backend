@@ -12,4 +12,5 @@ public interface PhienDangNhapNguoiDungRepository extends JpaRepository<PhienDan
     Optional<PhienDangNhapNguoiDung> findByMaPhien(String maPhien);
     
     void deleteByNguoiDung(NguoiDung nguoiDung);
+    void deleteByMaPhien(String maPhien);
 } 
