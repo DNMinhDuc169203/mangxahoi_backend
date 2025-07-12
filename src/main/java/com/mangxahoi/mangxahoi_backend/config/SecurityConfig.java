@@ -41,6 +41,7 @@ public class SecurityConfig {
                     "/api/goi-y/**",
                     "/tao-goi-y/{id}",
                     "/api/bai-viet/**",
+                    "/api/saved-posts/**",
                     "/api/binh-luan/**",
                     "/api/ket-ban/**",
                     "/{idNguoiDung}",
