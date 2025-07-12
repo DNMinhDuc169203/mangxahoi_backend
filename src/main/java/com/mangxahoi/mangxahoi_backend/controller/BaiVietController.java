@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.mangxahoi.mangxahoi_backend.repository.HashtagRepository;
+import com.mangxahoi.mangxahoi_backend.entity.Hashtag;
 
 @RestController
 @RequestMapping("/api/bai-viet")
@@ -34,6 +36,7 @@ public class BaiVietController {
     private final CloudinaryService cloudinaryService;
     private final TokenUtil tokenUtil;
     private final ThongBaoService thongBaoService;
+    private final HashtagRepository hashtagRepository;
 
     private NguoiDung getUserFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -446,5 +449,34 @@ public class BaiVietController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    /**
+     * Lấy danh sách bài viết thuộc các hashtag ưu tiên còn hạn (public, cho trang Explore)
+     * GET /api/bai-viet/hashtag-uu-tien?page=0&size=10
+     */
+    @GetMapping("/hashtag-uu-tien")
+    public ResponseEntity<Map<String, Object>> layBaiVietTheoHashtagUuTien(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<Hashtag> uuTienList = hashtagRepository.findAllUuTienConHan();
+        if (uuTienList.isEmpty()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("baiViet", List.of());
+            response.put("trangHienTai", 0);
+            response.put("tongSoTrang", 0);
+            response.put("tongSoBaiViet", 0);
+            return ResponseEntity.ok(response);
+        }
+        // Lấy tất cả id hashtag ưu tiên
+        List<Integer> hashtagIds = uuTienList.stream().map(Hashtag::getId).toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayTao").descending());
+        Page<BaiVietDTO> baiVietPage = baiVietService.timBaiVietTheoDanhSachHashtag(hashtagIds, pageable);
+        Map<String, Object> response = new HashMap<>();
+        response.put("baiViet", baiVietPage.getContent());
+        response.put("trangHienTai", baiVietPage.getNumber());
+        response.put("tongSoTrang", baiVietPage.getTotalPages());
+        response.put("tongSoBaiViet", baiVietPage.getTotalElements());
+        return ResponseEntity.ok(response);
     }
 } 
