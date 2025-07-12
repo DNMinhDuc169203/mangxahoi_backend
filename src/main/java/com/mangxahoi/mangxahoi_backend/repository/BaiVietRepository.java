@@ -28,6 +28,9 @@ public interface BaiVietRepository extends JpaRepository<BaiViet, Integer> {
     @Query("SELECT b FROM BaiViet b JOIN b.hashtags h WHERE h.ten = :tenHashtag AND b.cheDoRiengTu = 'cong_khai'")
     Page<BaiViet> findByHashtag(@Param("tenHashtag") String tenHashtag, Pageable pageable);
 
+    @Query("SELECT DISTINCT b FROM BaiViet b JOIN b.hashtags h WHERE h.id IN :hashtagIds AND b.cheDoRiengTu = 'cong_khai' ORDER BY b.ngayTao DESC")
+    Page<BaiViet> findByHashtagIds(@Param("hashtagIds") List<Integer> hashtagIds, Pageable pageable);
+
     @Query("SELECT b FROM BaiViet b WHERE b.nguoiDung.id IN :friendIds AND b.cheDoRiengTu = 'ban_be' ORDER BY b.ngayTao DESC")
     List<BaiViet> findAllByNguoiDungIdInAndCheDoRiengTu(@Param("friendIds") List<Integer> friendIds, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet cheDoRiengTu);
 

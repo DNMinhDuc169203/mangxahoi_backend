@@ -340,6 +340,12 @@ public class BaiVietServiceImpl implements BaiVietService {
     }
 
     @Override
+    public Page<BaiVietDTO> timBaiVietTheoDanhSachHashtag(List<Integer> hashtagIds, Pageable pageable) {
+        Page<BaiViet> baiVietPage = baiVietRepository.findByHashtagIds(hashtagIds, pageable);
+        return baiVietPage.map(this::convertToDTO);
+    }
+
+    @Override
     @Transactional
     public boolean thichBaiViet(Integer idBaiViet, Integer idNguoiDung) {
         // Tìm bài viết

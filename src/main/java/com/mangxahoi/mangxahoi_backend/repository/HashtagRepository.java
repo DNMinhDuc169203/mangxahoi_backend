@@ -46,4 +46,7 @@ public interface HashtagRepository extends JpaRepository<Hashtag, Integer> {
      */
     @Query("SELECT h FROM Hashtag h ORDER BY h.soLanSuDung DESC")
     List<Hashtag> findTopHashtags(Pageable pageable);
+
+    @Query("SELECT h FROM Hashtag h WHERE h.uuTien = true AND h.thoiGianUuTienKetThuc > CURRENT_TIMESTAMP")
+    List<Hashtag> findAllUuTienConHan();
 } 

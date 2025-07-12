@@ -52,4 +52,6 @@ public interface BaiVietService {
     Map<String, Object> thongKeBaiViet(String fromDate, String toDate);
 
     List<BaiVietDTO> findTop5MoiNhat();
+
+    Page<BaiVietDTO> timBaiVietTheoDanhSachHashtag(List<Integer> hashtagIds, Pageable pageable);
 } 
