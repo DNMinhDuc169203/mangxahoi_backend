@@ -5,14 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoiMoiKetBanDaNhanDTO {
-    private Integer idLoiMoi; 
-    private Integer idNguoiGui;
-    private String hoTenNguoiGui;
-    private String anhDaiDienNguoiGui;
-    private String emailNguoiGui;
+public class BanBeChungDTO {
+    private Integer idNguoiDung1;
+    private Integer idNguoiDung2;
+    private long soBanBeChung;
+    private List<NguoiDungDTO> danhSachBanBeChung;
 } 

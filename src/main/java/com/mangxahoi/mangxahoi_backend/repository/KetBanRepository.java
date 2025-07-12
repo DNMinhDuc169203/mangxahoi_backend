@@ -44,6 +44,26 @@ public interface KetBanRepository extends JpaRepository<KetBan, Integer> {
     @Query("SELECT k FROM KetBan k WHERE (k.nguoiGui = :nguoiDung1 AND k.nguoiNhan = :nguoiDung2) OR (k.nguoiGui = :nguoiDung2 AND k.nguoiNhan = :nguoiDung1)")
     Optional<KetBan> findRelationship(@Param("nguoiDung1") NguoiDung nguoiDung1, @Param("nguoiDung2") NguoiDung nguoiDung2);
     
+    // Tìm bạn bè chung giữa hai người dùng
+    @Query("SELECT DISTINCT u FROM NguoiDung u " +
+           "JOIN KetBan kb1 ON (u.id = kb1.nguoiGui.id OR u.id = kb1.nguoiNhan.id) " +
+           "JOIN KetBan kb2 ON (u.id = kb2.nguoiGui.id OR u.id = kb2.nguoiNhan.id) " +
+           "WHERE kb1.trangThai = 'ban_be' AND kb2.trangThai = 'ban_be' " +
+           "AND ((kb1.nguoiGui.id = :id1 OR kb1.nguoiNhan.id = :id1) " +
+           "AND (kb2.nguoiGui.id = :id2 OR kb2.nguoiNhan.id = :id2)) " +
+           "AND u.id NOT IN (:id1, :id2)")
+    List<NguoiDung> findMutualFriends(@Param("id1") Integer id1, @Param("id2") Integer id2);
+    
+    // Đếm số bạn bè chung
+    @Query("SELECT COUNT(DISTINCT u) FROM NguoiDung u " +
+           "JOIN KetBan kb1 ON (u.id = kb1.nguoiGui.id OR u.id = kb1.nguoiNhan.id) " +
+           "JOIN KetBan kb2 ON (u.id = kb2.nguoiGui.id OR u.id = kb2.nguoiNhan.id) " +
+           "WHERE kb1.trangThai = 'ban_be' AND kb2.trangThai = 'ban_be' " +
+           "AND ((kb1.nguoiGui.id = :id1 OR kb1.nguoiNhan.id = :id1) " +
+           "AND (kb2.nguoiGui.id = :id2 OR kb2.nguoiNhan.id = :id2)) " +
+           "AND u.id NOT IN (:id1, :id2)")
+    long countMutualFriends(@Param("id1") Integer id1, @Param("id2") Integer id2);
+    
     void deleteByNguoiGui(NguoiDung nguoiGui);
     
     void deleteByNguoiNhan(NguoiDung nguoiNhan);

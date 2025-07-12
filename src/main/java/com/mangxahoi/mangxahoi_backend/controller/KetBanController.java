@@ -11,9 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaNhanDTO;
+import com.mangxahoi.mangxahoi_backend.dto.BanBeChungDTO;
 import org.springframework.http.HttpStatus;
 
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/ket-ban")
@@ -154,5 +156,32 @@ public class KetBanController {
     public ResponseEntity<Map<String, Long>> demSoLoiMoiNhan(@RequestHeader("Authorization") String authHeader) {
         Integer idNguoiDung = getUserIdFromToken(authHeader);
         return ResponseEntity.ok(Map.of("count", ketBanService.demSoLoiMoiKetBan(idNguoiDung)));
+    }
+
+    @GetMapping("/ban-be-chung/{idNguoiDung2}")
+    public ResponseEntity<List<com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO>> layBanBeChung(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Integer idNguoiDung2) {
+        Integer idNguoiDung1 = getUserIdFromToken(authHeader);
+        List<com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO> banBeChung = ketBanService.timBanBeChung(idNguoiDung1, idNguoiDung2);
+        return ResponseEntity.ok(banBeChung);
+    }
+
+    @GetMapping("/dem/ban-be-chung/{idNguoiDung2}")
+    public ResponseEntity<Map<String, Long>> demSoBanBeChung(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Integer idNguoiDung2) {
+        Integer idNguoiDung1 = getUserIdFromToken(authHeader);
+        long soBanBeChung = ketBanService.demSoBanBeChung(idNguoiDung1, idNguoiDung2);
+        return ResponseEntity.ok(Map.of("count", soBanBeChung));
+    }
+
+    @GetMapping("/thong-tin-ban-be-chung/{idNguoiDung2}")
+    public ResponseEntity<BanBeChungDTO> layThongTinBanBeChung(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Integer idNguoiDung2) {
+        Integer idNguoiDung1 = getUserIdFromToken(authHeader);
+        BanBeChungDTO thongTinBanBeChung = ketBanService.layThongTinBanBeChung(idNguoiDung1, idNguoiDung2);
+        return ResponseEntity.ok(thongTinBanBeChung);
     }
 } 

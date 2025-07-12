@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.mangxahoi.mangxahoi_backend.repository.GoiYKetBanRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +38,7 @@ public class BaiVietServiceImpl implements BaiVietService {
     private final ThongBaoRepository thongBaoRepository;
     private final LichSuXuLyBaiVietRepository lichSuXuLyBaiVietRepository;
     private final ChinhSachRepository chinhSachRepository;
+    private final GoiYKetBanRepository goiYKetBanRepository;
 
     @Override
     @Transactional
@@ -377,6 +379,10 @@ public class BaiVietServiceImpl implements BaiVietService {
             baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
             baiVietRepository.save(baiViet);
             // Đã bỏ logic gửi thông báo ở đây
+            goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+            if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+                goiYKetBanRepository.calculateFriendSuggestions(baiViet.getNguoiDung().getId());
+            }
             return true;
         }
     }

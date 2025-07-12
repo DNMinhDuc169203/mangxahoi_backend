@@ -3,6 +3,7 @@ package com.mangxahoi.mangxahoi_backend.service.impl;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaNhanDTO;
+import com.mangxahoi.mangxahoi_backend.dto.BanBeChungDTO;
 import com.mangxahoi.mangxahoi_backend.entity.KetBan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -231,6 +233,44 @@ public class KetBanServiceImpl implements KetBanService {
     public Page<NguoiDungDTO> goiYKetBan(Integer idNguoiDung, Pageable pageable) {
         // Logic gợi ý phức tạp, tạm thời trả về rỗng
         return Page.empty(pageable);
+    }
+
+    @Override
+    public List<NguoiDungDTO> timBanBeChung(Integer idNguoiDung1, Integer idNguoiDung2) {
+        // Kiểm tra xem hai người dùng có tồn tại không
+        timNguoiDungBangId(idNguoiDung1);
+        timNguoiDungBangId(idNguoiDung2);
+        
+        List<NguoiDung> mutualFriends = ketBanRepository.findMutualFriends(idNguoiDung1, idNguoiDung2);
+        return mutualFriends.stream()
+                .map(this::chuyenSangDTO)
+                .toList();
+    }
+
+    @Override
+    public long demSoBanBeChung(Integer idNguoiDung1, Integer idNguoiDung2) {
+        // Kiểm tra xem hai người dùng có tồn tại không
+        timNguoiDungBangId(idNguoiDung1);
+        timNguoiDungBangId(idNguoiDung2);
+        
+        return ketBanRepository.countMutualFriends(idNguoiDung1, idNguoiDung2);
+    }
+
+    @Override
+    public BanBeChungDTO layThongTinBanBeChung(Integer idNguoiDung1, Integer idNguoiDung2) {
+        // Kiểm tra xem hai người dùng có tồn tại không
+        timNguoiDungBangId(idNguoiDung1);
+        timNguoiDungBangId(idNguoiDung2);
+        
+        List<NguoiDungDTO> danhSachBanBeChung = timBanBeChung(idNguoiDung1, idNguoiDung2);
+        long soBanBeChung = demSoBanBeChung(idNguoiDung1, idNguoiDung2);
+        
+        return BanBeChungDTO.builder()
+                .idNguoiDung1(idNguoiDung1)
+                .idNguoiDung2(idNguoiDung2)
+                .soBanBeChung(soBanBeChung)
+                .danhSachBanBeChung(danhSachBanBeChung)
+                .build();
     }
 
     private NguoiDungDTO chuyenSangDTO(NguoiDung nguoiDung) {

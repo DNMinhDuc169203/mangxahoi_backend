@@ -37,28 +37,18 @@ public interface BaiVietService {
      */
     Page<BaiVietDTO> layNewsfeedTongHop(Integer idNguoiDung, Pageable pageable);
     
-    /**
-     * Lấy danh sách người dùng đã thích bài viết
-     * 
-     * @param idBaiViet ID của bài viết
-     * @return Danh sách người dùng đã thích
-     */
     List<NguoiDungDTO> layDanhSachNguoiThichBaiViet(Integer idBaiViet);
     
-    // Ẩn bài viết với quyền admin
     void anBaiVietByAdmin(Integer idBaiViet, Integer adminId, String lyDo);
-    // Hiện (khôi phục) bài viết với quyền admin
+ 
     void hienBaiVietByAdmin(Integer idBaiViet, Integer adminId);
-    // Xóa bài viết với quyền admin
+
     void xoaBaiVietByAdmin(Integer idBaiViet, Integer adminId, String lyDo);
-    
-    // Tìm kiếm nâng cao cho admin
+
     Page<BaiVietDTO> timKiemBaiVietAdmin(String keyword, String hashtag, String trangThai, String loai, Boolean sensitive, Pageable pageable);
-    
-    // Lấy lịch sử xử lý bài viết
+ 
     List<LichSuXuLyBaiViet> lichSuXuLyBaiViet(Integer idBaiViet);
     
-    // Thống kê bài viết cho admin
     Map<String, Object> thongKeBaiViet(String fromDate, String toDate);
 
     List<BaiVietDTO> findTop5MoiNhat();

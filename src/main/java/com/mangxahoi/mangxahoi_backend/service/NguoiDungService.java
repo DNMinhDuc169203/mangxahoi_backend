@@ -35,65 +35,20 @@ public interface NguoiDungService {
     boolean xacThucEmail(String email, String token);
     
     boolean datLaiMatKhau(String email, String matKhauMoi);
-    
-    /**
-     * Lấy thông tin người dùng hiện tại từ token
-     * 
-     * @param token Token xác thực
-     * @return Thông tin người dùng hiện tại
-     */
+
     NguoiDungDTO layThongTinHienTai(String token);
-    
-    /**
-     * Upload ảnh đại diện cho người dùng
-     * 
-     * @param id ID của người dùng
-     * @param file File ảnh
-     * @param laAnhChinh Có phải là ảnh đại diện chính không
-     * @return Đường dẫn của ảnh đại diện
-     * @throws IOException Nếu có lỗi khi upload
-     */
+   
     String uploadAnhDaiDien(Integer id, MultipartFile file, boolean laAnhChinh) throws IOException;
 
-    /**
-     * Đổi mật khẩu cho người dùng hiện tại
-     * @param token Token xác thực
-     * @param matKhauCu Mật khẩu cũ
-     * @param matKhauMoi Mật khẩu mới
-     * @return true nếu đổi thành công, throw exception nếu lỗi
-     */
     boolean doiMatKhau(String token, String matKhauCu, String matKhauMoi);
 
-    /**
-     * Xóa ảnh đại diện của người dùng
-     * @param nguoiDungId ID của người dùng
-     * @param anhId ID của ảnh
-     * @throws IOException Nếu có lỗi khi xóa file trên Cloudinary
-     */
     void xoaAnhDaiDien(Integer nguoiDungId, Integer anhId) throws IOException;
 
-    /**
-     * Thay đổi mức riêng tư cho người dùng hiện tại
-     * @param token Token xác thực
-     * @param cheDoMoi Chế độ riêng tư mới
-     * @return NguoiDungDTO đã được cập nhật
-     */
     NguoiDungDTO thayDoiMucRiengTu(String token, com.mangxahoi.mangxahoi_backend.enums.CheDoBaiViet cheDoMoi);
 
-    /**
-     * Cập nhật cài đặt riêng tư cho người dùng hiện tại
-     * @param token Token xác thực
-     * @param request DTO chứa các cài đặt riêng tư mới
-     * @return NguoiDungDTO đã được cập nhật
-     */
     NguoiDungDTO capNhatCaiDatRiengTu(String token, PrivacySettingsRequest request);
 
     Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable);
 
-    /**
-     * Lấy danh sách gợi ý kết bạn cho người dùng hiện tại
-     * @param token Token xác thực
-     * @return Danh sách gợi ý kết bạn
-     */
     List<LichSuGoiYDTO> layGoiYKetBan(String token);
 } 

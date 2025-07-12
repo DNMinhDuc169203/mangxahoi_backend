@@ -3,6 +3,7 @@ package com.mangxahoi.mangxahoi_backend.service;
 import com.mangxahoi.mangxahoi_backend.dto.NguoiDungDTO;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaGuiDTO;
 import com.mangxahoi.mangxahoi_backend.dto.LoiMoiKetBanDaNhanDTO;
+import com.mangxahoi.mangxahoi_backend.dto.BanBeChungDTO;
 import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,4 +40,11 @@ public interface KetBanService {
     long demSoBanBe(Integer idNguoiDung);
     
     long demSoLoiMoiKetBan(Integer idNguoiDung);
+    
+    // Thêm method mới cho bạn bè chung
+    List<NguoiDungDTO> timBanBeChung(Integer idNguoiDung1, Integer idNguoiDung2);
+    
+    long demSoBanBeChung(Integer idNguoiDung1, Integer idNguoiDung2);
+    
+    BanBeChungDTO layThongTinBanBeChung(Integer idNguoiDung1, Integer idNguoiDung2);
 } 

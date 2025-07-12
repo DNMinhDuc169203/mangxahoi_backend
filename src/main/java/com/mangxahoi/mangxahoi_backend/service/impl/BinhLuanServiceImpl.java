@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
+import com.mangxahoi.mangxahoi_backend.repository.GoiYKetBanRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +40,7 @@ public class BinhLuanServiceImpl implements BinhLuanService {
     private final NguoiDungRepository nguoiDungRepository;
     private final LuotThichBinhLuanRepository luotThichBinhLuanRepository;
     private final ThongBaoRepository thongBaoRepository;
+    private final GoiYKetBanRepository goiYKetBanRepository;
 
     @Override
     @Transactional
@@ -76,6 +78,12 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         // Tăng số lượt bình luận của bài viết
         baiViet.setSoLuotBinhLuan(baiViet.getSoLuotBinhLuan() + 1);
         baiVietRepository.save(baiViet);
+        
+        // Gọi procedure gợi ý kết bạn
+        goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+        if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+            goiYKetBanRepository.calculateFriendSuggestions(baiViet.getNguoiDung().getId());
+        }
         
         // GỬI THÔNG BÁO TỰ ĐỘNG
         // Đã bỏ logic gửi thông báo ở đây
@@ -176,44 +184,55 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         
         return new PageImpl<>(binhLuanDTOs, pageable, binhLuanPage.getTotalElements());
     }
-
-    @Override
-    @Transactional
-    public boolean thichBinhLuan(Integer idBinhLuan, Integer idNguoiDung) {
-        // Tìm bình luận
-        BinhLuan binhLuan = binhLuanRepository.findById(idBinhLuan)
-                .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", idBinhLuan));
-        
-        // Tìm người dùng
-        NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
-                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", idNguoiDung));
-        
-        // Kiểm tra xem người dùng đã thích bình luận này chưa
-        Optional<LuotThichBinhLuan> existingLike = luotThichBinhLuanRepository.findByNguoiDungAndBinhLuan(nguoiDung, binhLuan);
-        
-        if (existingLike.isPresent()) {
-            // Nếu đã thích rồi và đang ở trạng thái đã hủy thích, cập nhật lại thành thích
-            LuotThichBinhLuan luotThich = existingLike.get();
-            if (!luotThich.getTrangThaiThich()) {
-                luotThich.setTrangThaiThich(true);
-                luotThich.setNgayHuyThich(null);
-                luotThichBinhLuanRepository.save(luotThich);
-                // Đã bỏ logic gửi thông báo ở đây
-                return true;
-            }
-            // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
-            return false;
-        } else {
-            // Nếu chưa thích, tạo mới lượt thích
-            LuotThichBinhLuan luotThich = new LuotThichBinhLuan();
-            luotThich.setNguoiDung(nguoiDung);
-            luotThich.setBinhLuan(binhLuan);
+@Override
+@Transactional
+public boolean thichBinhLuan(Integer idBinhLuan, Integer idNguoiDung) {
+    // Tìm bình luận
+    BinhLuan binhLuan = binhLuanRepository.findById(idBinhLuan)
+            .orElseThrow(() -> new ResourceNotFoundException("Bình luận", "id", idBinhLuan));
+    
+    // Tìm người dùng
+    NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
+            .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "id", idNguoiDung));
+    
+    // Kiểm tra xem người dùng đã thích bình luận này chưa
+    Optional<LuotThichBinhLuan> existingLike = luotThichBinhLuanRepository.findByNguoiDungAndBinhLuan(nguoiDung, binhLuan);
+    
+    if (existingLike.isPresent()) {
+        // Nếu đã thích rồi và đang ở trạng thái đã hủy thích, cập nhật lại thành thích
+        LuotThichBinhLuan luotThich = existingLike.get();
+        if (!luotThich.getTrangThaiThich()) {
             luotThich.setTrangThaiThich(true);
+            luotThich.setNgayHuyThich(null);
             luotThichBinhLuanRepository.save(luotThich);
-            // Đã bỏ logic gửi thông báo ở đây
+
+            // Gọi procedure gợi ý kết bạn
+            goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+            if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
+                goiYKetBanRepository.calculateFriendSuggestions(binhLuan.getNguoiDung().getId());
+            }
+
             return true;
         }
+        // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
+        return false;
+    } else {
+        // Nếu chưa thích, tạo mới lượt thích
+        LuotThichBinhLuan luotThich = new LuotThichBinhLuan();
+        luotThich.setNguoiDung(nguoiDung);
+        luotThich.setBinhLuan(binhLuan);
+        luotThich.setTrangThaiThich(true);
+        luotThichBinhLuanRepository.save(luotThich);
+
+        // Gọi procedure gợi ý kết bạn
+        goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+        if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
+            goiYKetBanRepository.calculateFriendSuggestions(binhLuan.getNguoiDung().getId());
+        }
+
+        return true;
     }
+}
 
     @Override
     @Transactional
