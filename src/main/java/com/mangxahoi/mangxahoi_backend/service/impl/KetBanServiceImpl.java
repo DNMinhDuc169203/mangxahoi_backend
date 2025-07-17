@@ -8,15 +8,15 @@ import com.mangxahoi.mangxahoi_backend.entity.KetBan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
 import com.mangxahoi.mangxahoi_backend.entity.ThongBao;
+import com.mangxahoi.mangxahoi_backend.entity.ChiTietTuongTac;
 import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiTuongTac;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.exception.ValidationException;
-import com.mangxahoi.mangxahoi_backend.repository.KetBanRepository;
-import com.mangxahoi.mangxahoi_backend.repository.NguoiDungAnhRepository;
-import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
-import com.mangxahoi.mangxahoi_backend.repository.ThongBaoRepository;
+import com.mangxahoi.mangxahoi_backend.repository.*;
 import com.mangxahoi.mangxahoi_backend.service.KetBanService;
+import com.mangxahoi.mangxahoi_backend.service.GoiYKetBanService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,6 +36,9 @@ public class KetBanServiceImpl implements KetBanService {
     private final NguoiDungAnhRepository nguoiDungAnhRepository;
     private final TokenUtil tokenUtil;
     private final ThongBaoRepository thongBaoRepository;
+    private final GoiYKetBanService goiYKetBanService;
+    private final ChiTietTuongTacRepository chiTietTuongTacRepository;
+    private final LichSuGoiYRepository lichSuGoiYRepository;
 
     private NguoiDung layNguoiDungTuToken(String token) {
         return tokenUtil.layNguoiDungTuToken(token);
@@ -78,6 +81,31 @@ public class KetBanServiceImpl implements KetBanService {
         }
         ketBan.setTrangThai(TrangThaiKetBan.ban_be);
         ketBanRepository.save(ketBan);
+
+        // Xóa lịch sử gợi ý giữa hai người (cả hai chiều)
+        lichSuGoiYRepository.findByNguoiDuocGoiYAndNguoiTrongGoiY(ketBan.getNguoiNhan(), ketBan.getNguoiGui())
+        .ifPresent(lichSuGoiYRepository::delete);
+        lichSuGoiYRepository.findByNguoiDuocGoiYAndNguoiTrongGoiY(ketBan.getNguoiGui(), ketBan.getNguoiNhan())
+        .ifPresent(lichSuGoiYRepository::delete);
+
+        // Ghi tương tác bạn chung cho cả hai chiều
+        ChiTietTuongTac chiTiet1 = new ChiTietTuongTac();
+        chiTiet1.setNguoi1(ketBan.getNguoiNhan());
+        chiTiet1.setNguoi2(ketBan.getNguoiGui());
+        chiTiet1.setLoaiTuongTac(LoaiTuongTac.ban_chung);
+        chiTiet1.setDiemTuongTac(20);
+        chiTiet1.setNgayTao(java.time.LocalDateTime.now());
+        chiTietTuongTacRepository.save(chiTiet1);
+        ChiTietTuongTac chiTiet2 = new ChiTietTuongTac();
+        chiTiet2.setNguoi1(ketBan.getNguoiGui());
+        chiTiet2.setNguoi2(ketBan.getNguoiNhan());
+        chiTiet2.setLoaiTuongTac(LoaiTuongTac.ban_chung);
+        chiTiet2.setDiemTuongTac(20);
+        chiTiet2.setNgayTao(java.time.LocalDateTime.now());
+        chiTietTuongTacRepository.save(chiTiet2);
+        // Tự động cập nhật gợi ý kết bạn cho cả hai người
+        goiYKetBanService.taoGoiYKetBan(idNguoiDung);
+        goiYKetBanService.taoGoiYKetBan(ketBan.getNguoiGui().getId());
         return true;
     }
 

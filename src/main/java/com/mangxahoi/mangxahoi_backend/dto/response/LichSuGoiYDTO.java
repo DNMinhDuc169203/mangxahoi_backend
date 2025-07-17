@@ -21,4 +21,5 @@ public class LichSuGoiYDTO {
     private Boolean daBoQua;
     private Boolean daChan;
     private LocalDateTime ngayGoiY;
+    private Integer idLoiMoi;
 } 

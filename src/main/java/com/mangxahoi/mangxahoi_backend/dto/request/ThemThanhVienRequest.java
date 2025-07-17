@@ -15,11 +15,5 @@ public class ThemThanhVienRequest {
     private List<Integer> idThanhVienMoi;
     private Integer idNguoiThucHien;
 
-    // Getters và Setters
-    public Integer getIdCuocTroChuyen() { return idCuocTroChuyen; }
-    public void setIdCuocTroChuyen(Integer idCuocTroChuyen) { this.idCuocTroChuyen = idCuocTroChuyen; }
-    public List<Integer> getIdThanhVienMoi() { return idThanhVienMoi; }
-    public void setIdThanhVienMoi(List<Integer> idThanhVienMoi) { this.idThanhVienMoi = idThanhVienMoi; }
-    public Integer getIdNguoiThucHien() { return idNguoiThucHien; }
-    public void setIdNguoiThucHien(Integer idNguoiThucHien) { this.idNguoiThucHien = idNguoiThucHien; }
+
 }

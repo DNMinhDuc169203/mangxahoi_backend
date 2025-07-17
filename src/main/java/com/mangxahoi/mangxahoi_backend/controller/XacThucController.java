@@ -26,22 +26,7 @@ public class XacThucController {
     private final NguoiDungRepository nguoiDungRepository;
     private final EmailService emailService;
 
-    // @PostMapping("/xac-nhan")
-    // public ResponseEntity<Map<String, Object>> xacNhanEmail(
-    //         @RequestParam String email,
-    //         @RequestParam String ma) {
-    //     Map<String, Object> response = new HashMap<>();
-    //     try {
-    //         boolean ketQua = nguoiDungService.xacThucEmail(email, ma);
-    //         response.put("thanhCong", ketQua);
-    //         response.put("message", "Xác thực tài khoản thành công");
-    //         return ResponseEntity.ok(response);
-    //     } catch (Exception e) {
-    //         response.put("thanhCong", false);
-    //         response.put("message", e.getMessage());
-    //         return ResponseEntity.badRequest().body(response);
-    //     }
-    // }
+
     
     @PostMapping("/gui-lai-ma")
     public ResponseEntity<Map<String, Object>> guiLaiMaXacThuc(@Valid @RequestBody GuiLaiMaXacThucRequest request) {

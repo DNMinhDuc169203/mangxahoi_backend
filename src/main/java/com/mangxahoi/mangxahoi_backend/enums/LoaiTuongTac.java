@@ -14,5 +14,6 @@ public enum LoaiTuongTac {
     chap_nhan_ket_ban,
     theo_doi,
     chia_se_bai_viet,
-    luu_bai_viet
+    luu_bai_viet,
+    ban_chung
 } 

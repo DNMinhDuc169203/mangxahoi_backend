@@ -9,11 +9,11 @@ server:
 
 spring:
   profiles:
-    active: dev
+    active: prod  # Thay đổi từ dev sang prod
   datasource:
     url: "jdbc:mysql://localhost:3306/luan_van_tot_nghiep"
     username: root
-    password: 123456
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 10
@@ -38,8 +38,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: your-email@gmail.com
-    password: your-app-password
+    username: dangducmtp3@gmail.com  # Phải là email đầy đủ
+    password: ysyw mjvs npcd nitc    # App Password từ Google
     properties:
       mail:
         smtp:
@@ -51,6 +51,9 @@ spring:
             trust: smtp.gmail.com
           socketFactory:
             fallback: true
+          timeout: 10000
+          connectiontimeout: 10000
+        debug: false
   config:
     import: optional:file:./config/cloudinary.properties
 

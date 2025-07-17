@@ -30,7 +30,7 @@ public interface NguoiDungService {
     
     Page<NguoiDungDTO> timTatCa(Pageable pageable);
     
-    Page<NguoiDungDTO> timTheoHoTen(String hoTen, Pageable pageable);
+   Page<NguoiDungDTO> timTheoHoTen(String hoTen, Pageable pageable, Integer requesterId);   
     
     boolean xacThucEmail(String email, String token);
     
@@ -48,7 +48,7 @@ public interface NguoiDungService {
 
     NguoiDungDTO capNhatCaiDatRiengTu(String token, PrivacySettingsRequest request);
 
-    Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable);
+ Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable, Integer requesterId);
 
     List<LichSuGoiYDTO> layGoiYKetBan(String token);
 } 

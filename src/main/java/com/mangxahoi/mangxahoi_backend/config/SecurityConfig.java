@@ -51,7 +51,8 @@ public class SecurityConfig {
                     "/api/bao-cao/guibaocao",
                     "/ws/chat/**",
                     "ws/chat/info/**",
-                    "/ws/chat"
+                    "/ws/chat",
+                    "/api/test/**"
 
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("quan_tri_vien")

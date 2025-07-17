@@ -66,8 +66,8 @@ public class BinhLuanController {
             BinhLuanDTO binhLuanDTO = new BinhLuanDTO();
             binhLuanDTO.setNoiDung(noiDung);
             
-            // Thêm bình luận
-            BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, nguoiDung.getId(), null, binhLuanDTO);
+                // Thêm bình luận
+                BinhLuanDTO createdBinhLuan = binhLuanService.themBinhLuan(idBaiViet, nguoiDung.getId(), null, binhLuanDTO);
             
             // Gửi thông báo cho chủ bài viết
             thongBaoService.guiThongBaoBinhLuan(nguoiDung.getId(), idBaiViet);

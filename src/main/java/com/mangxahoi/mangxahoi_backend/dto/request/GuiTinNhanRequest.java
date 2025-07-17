@@ -7,7 +7,7 @@ public class GuiTinNhanRequest {
     private Integer idCuocTroChuyen;
     private Integer idNguoiGui;
     private String noiDung;
-    private String loaiTinNhan; // van_ban, hinh_anh, tep_tin
+    private String loaiTinNhan; 
     private String urlTepTin;
 
 

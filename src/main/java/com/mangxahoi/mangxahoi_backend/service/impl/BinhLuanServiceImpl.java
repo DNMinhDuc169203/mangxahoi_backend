@@ -7,20 +7,26 @@ import com.mangxahoi.mangxahoi_backend.entity.LuotThichBinhLuan;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
 import com.mangxahoi.mangxahoi_backend.entity.ThongBao;
+import com.mangxahoi.mangxahoi_backend.entity.ChiTietTuongTac;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiTuongTac;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.BaiVietRepository;
 import com.mangxahoi.mangxahoi_backend.repository.BinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.LuotThichBinhLuanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
 import com.mangxahoi.mangxahoi_backend.repository.ThongBaoRepository;
+import com.mangxahoi.mangxahoi_backend.repository.ChiTietTuongTacRepository;
 import com.mangxahoi.mangxahoi_backend.service.BinhLuanService;
+import com.mangxahoi.mangxahoi_backend.service.GoiYKetBanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,19 +34,20 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.mangxahoi.mangxahoi_backend.enums.LoaiThongBao;
-import com.mangxahoi.mangxahoi_backend.repository.GoiYKetBanRepository;
 
 @Service
 @RequiredArgsConstructor
 public class BinhLuanServiceImpl implements BinhLuanService {
+    private static final Logger logger = LoggerFactory.getLogger(BinhLuanServiceImpl.class);
 
     private final BinhLuanRepository binhLuanRepository;
     private final BaiVietRepository baiVietRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final LuotThichBinhLuanRepository luotThichBinhLuanRepository;
     private final ThongBaoRepository thongBaoRepository;
-    private final GoiYKetBanRepository goiYKetBanRepository;
+    private final GoiYKetBanService goiYKetBanService;
+    private final ChiTietTuongTacRepository chiTietTuongTacRepository;
+
 
     @Override
     @Transactional
@@ -79,14 +86,25 @@ public class BinhLuanServiceImpl implements BinhLuanService {
         baiViet.setSoLuotBinhLuan(baiViet.getSoLuotBinhLuan() + 1);
         baiVietRepository.save(baiViet);
         
-        // Gọi procedure gợi ý kết bạn
-        goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+        // Tự động cập nhật gợi ý kết bạn
+        logger.info("[BinhLuan] Gọi gợi ý kết bạn cho userId: {}", idNguoiDung);
+        goiYKetBanService.taoGoiYKetBan(idNguoiDung);
         if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
-            goiYKetBanRepository.calculateFriendSuggestions(baiViet.getNguoiDung().getId());
+            logger.info("[BinhLuan] Gọi gợi ý kết bạn cho chủ bài viết userId: {}", baiViet.getNguoiDung().getId());
+            goiYKetBanService.taoGoiYKetBan(baiViet.getNguoiDung().getId());
         }
         
         // GỬI THÔNG BÁO TỰ ĐỘNG
         // Đã bỏ logic gửi thông báo ở đây
+        
+        // Ghi tương tác vào chi_tiet_tuong_tac
+        ChiTietTuongTac chiTiet = new ChiTietTuongTac();
+        chiTiet.setNguoi1(nguoiDung);
+        chiTiet.setNguoi2(baiViet.getNguoiDung());
+        chiTiet.setLoaiTuongTac(LoaiTuongTac.binh_luan);
+        chiTiet.setDiemTuongTac(10);
+        chiTiet.setNgayTao(java.time.LocalDateTime.now());
+        chiTietTuongTacRepository.save(chiTiet);
         
         // Chuyển đổi sang DTO và trả về
         return convertToDTO(savedBinhLuan, idNguoiDung);
@@ -205,13 +223,21 @@ public boolean thichBinhLuan(Integer idBinhLuan, Integer idNguoiDung) {
             luotThich.setTrangThaiThich(true);
             luotThich.setNgayHuyThich(null);
             luotThichBinhLuanRepository.save(luotThich);
-
-            // Gọi procedure gợi ý kết bạn
-            goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+            // Tự động cập nhật gợi ý kết bạn
+            logger.info("[BinhLuan] Gọi gợi ý kết bạn cho userId: {}", idNguoiDung);
+            goiYKetBanService.taoGoiYKetBan(idNguoiDung);
             if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
-                goiYKetBanRepository.calculateFriendSuggestions(binhLuan.getNguoiDung().getId());
+                logger.info("[BinhLuan] Gọi gợi ý kết bạn cho chủ bình luận userId: {}", binhLuan.getNguoiDung().getId());
+                goiYKetBanService.taoGoiYKetBan(binhLuan.getNguoiDung().getId());
             }
-
+            // Ghi tương tác vào chi_tiet_tuong_tac
+            ChiTietTuongTac chiTiet = new ChiTietTuongTac();
+            chiTiet.setNguoi1(nguoiDung);
+            chiTiet.setNguoi2(binhLuan.getNguoiDung());
+            chiTiet.setLoaiTuongTac(LoaiTuongTac.like_binh_luan);
+            chiTiet.setDiemTuongTac(3);
+            chiTiet.setNgayTao(java.time.LocalDateTime.now());
+            chiTietTuongTacRepository.save(chiTiet);
             return true;
         }
         // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -223,13 +249,21 @@ public boolean thichBinhLuan(Integer idBinhLuan, Integer idNguoiDung) {
         luotThich.setBinhLuan(binhLuan);
         luotThich.setTrangThaiThich(true);
         luotThichBinhLuanRepository.save(luotThich);
-
-        // Gọi procedure gợi ý kết bạn
-        goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+        // Tự động cập nhật gợi ý kết bạn
+        logger.info("[BinhLuan] Gọi gợi ý kết bạn cho userId: {}", idNguoiDung);
+        goiYKetBanService.taoGoiYKetBan(idNguoiDung);
         if (!binhLuan.getNguoiDung().getId().equals(idNguoiDung)) {
-            goiYKetBanRepository.calculateFriendSuggestions(binhLuan.getNguoiDung().getId());
+            logger.info("[BinhLuan] Gọi gợi ý kết bạn cho chủ bình luận userId: {}", binhLuan.getNguoiDung().getId());
+            goiYKetBanService.taoGoiYKetBan(binhLuan.getNguoiDung().getId());
         }
-
+        // Ghi tương tác vào chi_tiet_tuong_tac
+        ChiTietTuongTac chiTiet = new ChiTietTuongTac();
+        chiTiet.setNguoi1(nguoiDung);
+        chiTiet.setNguoi2(binhLuan.getNguoiDung());
+        chiTiet.setLoaiTuongTac(LoaiTuongTac.like_binh_luan);
+        chiTiet.setDiemTuongTac(3);
+        chiTiet.setNgayTao(java.time.LocalDateTime.now());
+        chiTietTuongTacRepository.save(chiTiet);
         return true;
     }
 }

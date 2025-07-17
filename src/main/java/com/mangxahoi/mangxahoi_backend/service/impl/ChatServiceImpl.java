@@ -10,6 +10,7 @@ import com.mangxahoi.mangxahoi_backend.entity.ThanhVienCuocTroChuyen;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiCuocTroChuyen;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiTinNhan;
 import com.mangxahoi.mangxahoi_backend.enums.VaiTroThanhVien;
+import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
 import com.mangxahoi.mangxahoi_backend.repository.TinNhanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.CuocTroChuyenRepository;
 import com.mangxahoi.mangxahoi_backend.repository.NguoiDungRepository;
@@ -18,6 +19,7 @@ import com.mangxahoi.mangxahoi_backend.repository.TinNhanDaDocRepository;
 import com.mangxahoi.mangxahoi_backend.entity.TinNhanDaDoc;
 import com.mangxahoi.mangxahoi_backend.service.ChatService;
 import com.mangxahoi.mangxahoi_backend.service.ThongBaoService;
+import com.mangxahoi.mangxahoi_backend.service.KetBanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -42,6 +44,8 @@ public class ChatServiceImpl implements ChatService {
     private TinNhanDaDocRepository tinNhanDaDocRepository;
     @Autowired
     private ThongBaoService thongBaoService;
+    @Autowired
+    private KetBanService ketBanService;
 
     @Override
     public GuiTinNhanResponse guiTinNhan(GuiTinNhanRequest request) {
@@ -49,6 +53,18 @@ public class ChatServiceImpl implements ChatService {
             .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
         NguoiDung nguoiGui = nguoiDungRepository.findById(request.getIdNguoiGui())
             .orElseThrow(() -> new RuntimeException("Không tìm thấy người gửi"));
+        // Bổ sung kiểm tra trạng thái bạn bè nếu là chat cá nhân
+        if (cuocTroChuyen.getLoai() == LoaiCuocTroChuyen.ca_nhan) {
+            List<ThanhVienCuocTroChuyen> members = thanhVienCuocTroChuyenRepository.findByCuocTroChuyen(cuocTroChuyen);
+            if (members.size() == 2) {
+                Integer id1 = members.get(0).getNguoiDung().getId();
+                Integer id2 = members.get(1).getNguoiDung().getId();
+                TrangThaiKetBan trangThai = ketBanService.kiemTraTrangThaiKetBan(id1, id2);
+                if (trangThai != TrangThaiKetBan.ban_be) {
+                    throw new RuntimeException("Hai người không còn là bạn bè, không thể gửi tin nhắn.");
+                }
+            }
+        }
 
         TinNhan tinNhan = new TinNhan();
         tinNhan.setCuocTroChuyen(cuocTroChuyen);

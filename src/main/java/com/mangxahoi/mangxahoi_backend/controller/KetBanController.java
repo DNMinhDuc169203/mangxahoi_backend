@@ -31,19 +31,23 @@ public class KetBanController {
         return tokenUtil.layNguoiDungTuToken(token).getId();
     }
 
-    @PostMapping("/loi-moi/{idNguoiNhan}")
-    public ResponseEntity<Map<String, String>> guiLoiMoiKetBan(
+   @PostMapping("/loi-moi/{idNguoiNhan}")
+    public ResponseEntity<Map<String, Object>> guiLoiMoiKetBan(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Integer idNguoiNhan) {
         Integer idNguoiGui = getUserIdFromToken(authHeader);
         Integer idKetBan = ketBanService.guiLoiMoiKetBan(idNguoiGui, idNguoiNhan);
-        
+
         // Gửi thông báo cho người nhận
         if (idKetBan != null) {
             thongBaoService.guiThongBaoLoiMoiKetBan(idNguoiGui, idKetBan);
         }
-        
-        return ResponseEntity.ok(Map.of("message", "Gửi lời mời kết bạn thành công."));
+
+        // Trả về cả idLoiMoi cho frontend
+        return ResponseEntity.ok(Map.of(
+            "message", "Gửi lời mời kết bạn thành công.",
+            "idLoiMoi", idKetBan
+        ));
     }
 
     @PostMapping("/chap-nhan/{idLoiMoi}")
@@ -62,6 +66,7 @@ public class KetBanController {
             @PathVariable Integer idLoiMoi) {
         Integer idNguoiDung = getUserIdFromToken(authHeader);
         ketBanService.tuChoiLoiMoiKetBan(idNguoiDung, idLoiMoi);
+          thongBaoService.xoaThongBaoKetBanSauKhiChapNhan(idLoiMoi);
         return ResponseEntity.ok(Map.of("message", "Từ chối lời mời kết bạn thành công."));
     }
 
@@ -71,6 +76,7 @@ public class KetBanController {
             @PathVariable Integer idLoiMoi) {
         Integer idNguoiDung = getUserIdFromToken(authHeader);
         ketBanService.huyLoiMoiKetBan(idNguoiDung, idLoiMoi);
+          thongBaoService.xoaThongBaoKetBanSauKhiChapNhan(idLoiMoi);
         return ResponseEntity.ok(Map.of("message", "Hủy lời mời đã gửi thành công."));
     }
 

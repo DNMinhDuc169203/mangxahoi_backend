@@ -151,13 +151,23 @@ public class NguoiDungController {
     }
 
     @GetMapping("/tim-kiem")
-    public ResponseEntity<Page<NguoiDungDTO>> timKiemNguoiDung(@RequestParam String tuKhoa, Pageable pageable) {
+    public ResponseEntity<Page<NguoiDungDTO>> timKiemNguoiDung(@RequestHeader("Authorization") String authHeader, @RequestParam String tuKhoa, Pageable pageable) {
+        Integer requesterId = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            try {
+                requesterId = tokenUtil.layNguoiDungTuToken(token).getId();
+            } catch (Exception e) {
+                requesterId = null;
+            }
+        }
         Page<NguoiDungDTO> nguoiDungs;
         // Nếu là số điện thoại (chỉ chứa số, có thể có dấu + ở đầu)
         if (tuKhoa.matches("^\\+?\\d+$")) {
-            nguoiDungs = nguoiDungService.timTheoSoDienThoaiGanDung(tuKhoa, pageable);
+          nguoiDungs = nguoiDungService.timTheoSoDienThoaiGanDung(tuKhoa, pageable, requesterId);
+
         } else {
-            nguoiDungs = nguoiDungService.timTheoHoTen(tuKhoa, pageable);
+            nguoiDungs = nguoiDungService.timTheoHoTen(tuKhoa, pageable, requesterId);
         }
         return ResponseEntity.ok(nguoiDungs);
     }

@@ -67,4 +67,8 @@ public interface KetBanRepository extends JpaRepository<KetBan, Integer> {
     void deleteByNguoiGui(NguoiDung nguoiGui);
     
     void deleteByNguoiNhan(NguoiDung nguoiNhan);
+
+    List<KetBan> findByNguoiGuiAndTrangThai(NguoiDung nguoiGui, com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan trangThai);
+
+    List<KetBan> findByNguoiNhanAndTrangThai(NguoiDung nguoiNhan, com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan trangThai);
 } 

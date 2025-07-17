@@ -9,6 +9,7 @@ import com.mangxahoi.mangxahoi_backend.dto.response.LichSuGoiYDTO;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDung;
 import com.mangxahoi.mangxahoi_backend.entity.NguoiDungAnh;
 import com.mangxahoi.mangxahoi_backend.entity.PhienDangNhapNguoiDung;
+import com.mangxahoi.mangxahoi_backend.entity.KetBan;
 import com.mangxahoi.mangxahoi_backend.enums.LoaiMaXacThuc;
 import com.mangxahoi.mangxahoi_backend.exception.AuthException;
 import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
@@ -19,6 +20,7 @@ import com.mangxahoi.mangxahoi_backend.repository.PhienDangNhapNguoiDungReposito
 import com.mangxahoi.mangxahoi_backend.repository.KetBanRepository;
 import com.mangxahoi.mangxahoi_backend.repository.LichSuGoiYRepository;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
+import com.mangxahoi.mangxahoi_backend.service.EmailService;
 import com.mangxahoi.mangxahoi_backend.service.NguoiDungService;
 import com.mangxahoi.mangxahoi_backend.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +53,7 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     private final CloudinaryService cloudinaryService;
     private final TokenUtil tokenUtil;
     private final LichSuGoiYRepository lichSuGoiYRepository;
-
+    private final EmailService emailService;
     @Override
     @Transactional
     public NguoiDungDTO dangKy(NguoiDungDTO nguoiDungDTO, String matKhau) {
@@ -103,6 +106,9 @@ public class NguoiDungServiceImpl implements NguoiDungService {
                 .build();
         
         NguoiDung savedNguoiDung = nguoiDungRepository.save(nguoiDung);
+
+
+        emailService.guiMaXacThuc(savedNguoiDung.getEmail(), savedNguoiDung.getTokenXacThuc(), "XAC_THUC_TAI_KHOAN");
         
         // Nếu có ảnh đại diện, lưu ảnh
         // if (nguoiDungDTO.getAnhDaiDien() != null && !nguoiDungDTO.getAnhDaiDien().isEmpty()) {
@@ -249,6 +255,21 @@ public class NguoiDungServiceImpl implements NguoiDungService {
             }
         }
 
+        // Kiểm tra nếu profileOwner đã chặn requester
+        if (requester != null && !requester.getId().equals(profileOwner.getId())) {
+            Optional<KetBan> block = ketBanRepository.findRelationship(profileOwner, requester);
+            if (block.isPresent()
+                && block.get().getTrangThai() == TrangThaiKetBan.bi_chan
+                && block.get().getNguoiGui().getId().equals(profileOwner.getId())
+                && block.get().getNguoiNhan().getId().equals(requester.getId())) {
+                // profileOwner đã chặn requester
+                throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Bạn không thể xem thông tin người này."
+                );
+            }
+        }
+
         // Nếu người xem là chính chủ hồ sơ hoặc là admin, luôn trả về đầy đủ
         if (requester != null && (requester.getId().equals(profileOwner.getId()) || requester.getVaiTro() == com.mangxahoi.mangxahoi_backend.enums.VaiTro.quan_tri_vien)) {
             return Optional.of(chuyenSangDTO(profileOwner));
@@ -295,9 +316,25 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     }
 
     @Override
-    public Page<NguoiDungDTO> timTheoHoTen(String hoTen, Pageable pageable) {
-        return nguoiDungRepository.findByHoTenContainingIgnoreCase(hoTen, pageable)
-                .map(this::chuyenSangDTO);
+    public Page<NguoiDungDTO> timTheoHoTen(String hoTen, Pageable pageable, Integer requesterId) {
+        Page<NguoiDung> page = nguoiDungRepository.findByHoTenContainingIgnoreCase(hoTen, pageable);
+        List<NguoiDungDTO> filtered = page.getContent().stream()
+            .filter(nguoiDung -> {
+                if (requesterId != null && !requesterId.equals(nguoiDung.getId())) {
+                    Optional<NguoiDung> requesterOpt = nguoiDungRepository.findById(requesterId);
+                    if (requesterOpt.isEmpty()) return true; // Nếu không tìm thấy requester, không filter
+                    Optional<KetBan> block = ketBanRepository.findRelationship(nguoiDung, requesterOpt.get());
+                    // Chỉ loại nếu người trong kết quả đã chặn requester
+                     return !(block.isPresent()
+                        && block.get().getTrangThai() == TrangThaiKetBan.bi_chan
+                        && block.get().getNguoiGui().getId().equals(nguoiDung.getId())
+                        && block.get().getNguoiNhan().getId().equals(requesterId));
+                }
+                return true;
+            })
+            .map(this::chuyenSangDTO)
+            .toList();
+        return new org.springframework.data.domain.PageImpl<>(filtered, pageable, page.getTotalElements());
     }
 
     @Override
@@ -581,9 +618,25 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     }
 
     @Override
-    public Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable) {
+    public Page<NguoiDungDTO> timTheoSoDienThoaiGanDung(String soDienThoai, Pageable pageable, Integer requesterId) {
         Page<NguoiDung> page = nguoiDungRepository.findBySoDienThoaiContaining(soDienThoai, pageable);
-        return page.map(this::chuyenSangDTO);
+        List<NguoiDungDTO> filtered = page.getContent().stream()
+            .filter(nguoiDung -> {
+                if (requesterId != null && !requesterId.equals(nguoiDung.getId())) {
+                    Optional<NguoiDung> requesterOpt = nguoiDungRepository.findById(requesterId);
+                    if (requesterOpt.isEmpty()) return true;
+                    Optional<KetBan> block = ketBanRepository.findRelationship(nguoiDung, requesterOpt.get());
+                    // Chỉ loại nếu người trong kết quả đã chặn requester
+                    return !(block.isPresent()
+                        && block.get().getTrangThai() == TrangThaiKetBan.bi_chan
+                        && block.get().getNguoiGui().getId().equals(nguoiDung.getId())
+                        && block.get().getNguoiNhan().getId().equals(requesterId));
+                }
+                return true;
+            })
+            .map(this::chuyenSangDTO)
+            .toList();
+        return new org.springframework.data.domain.PageImpl<>(filtered, pageable, page.getTotalElements());
     }
 
     @Override
@@ -591,16 +644,24 @@ public class NguoiDungServiceImpl implements NguoiDungService {
         NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
         return lichSuGoiYRepository.findByNguoiDuocGoiY(nguoiDung)
                 .stream()
-                .map(ls -> LichSuGoiYDTO.builder()
+                .map(ls -> {
+                    Integer idLoiMoi = ketBanRepository.findRelationship(nguoiDung, ls.getNguoiTrongGoiY())
+                        .filter(kb -> kb.getTrangThai() == TrangThaiKetBan.cho_chap_nhan)
+                        .map(kb -> kb.getId())
+                        .orElse(null);
+                    Boolean daGuiLoiMoi = idLoiMoi != null;
+                    return LichSuGoiYDTO.builder()
                         .id(ls.getId())
                         .nguoiTrongGoiY(ls.getNguoiTrongGoiY() != null ? chuyenSangDTO(ls.getNguoiTrongGoiY()) : null)
                         .diemGoiY(ls.getDiemGoiY())
                         .lyDoGoiY(ls.getLyDoGoiY())
-                        .daGuiLoiMoi(ls.getDaGuiLoiMoi())
+                        .daGuiLoiMoi(daGuiLoiMoi)
+                        .idLoiMoi(idLoiMoi)
                         .daBoQua(ls.getDaBoQua())
                         .daChan(ls.getDaChan())
                         .ngayGoiY(ls.getNgayGoiY())
-                        .build())
-                .toList();
+                        .build();
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 }

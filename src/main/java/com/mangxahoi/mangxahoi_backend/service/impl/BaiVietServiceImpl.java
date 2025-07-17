@@ -10,7 +10,10 @@ import com.mangxahoi.mangxahoi_backend.exception.ResourceNotFoundException;
 import com.mangxahoi.mangxahoi_backend.repository.*;
 import com.mangxahoi.mangxahoi_backend.service.BaiVietService;
 import com.mangxahoi.mangxahoi_backend.service.CloudinaryService;
+import com.mangxahoi.mangxahoi_backend.service.GoiYKetBanService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
@@ -21,11 +24,15 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import com.mangxahoi.mangxahoi_backend.repository.GoiYKetBanRepository;
+import com.mangxahoi.mangxahoi_backend.repository.ChiTietTuongTacRepository;
+import com.mangxahoi.mangxahoi_backend.entity.ChiTietTuongTac;
+import com.mangxahoi.mangxahoi_backend.enums.LoaiTuongTac;
+
 
 @Service
 @RequiredArgsConstructor
 public class BaiVietServiceImpl implements BaiVietService {
+    private static final Logger logger = LoggerFactory.getLogger(BaiVietServiceImpl.class);
 
     private final BaiVietRepository baiVietRepository;
     private final NguoiDungRepository nguoiDungRepository;
@@ -38,7 +45,9 @@ public class BaiVietServiceImpl implements BaiVietService {
     private final ThongBaoRepository thongBaoRepository;
     private final LichSuXuLyBaiVietRepository lichSuXuLyBaiVietRepository;
     private final ChinhSachRepository chinhSachRepository;
-    private final GoiYKetBanRepository goiYKetBanRepository;
+    private final GoiYKetBanService goiYKetBanService;
+    private final ChiTietTuongTacRepository chiTietTuongTacRepository;
+
 
     @Override
     @Transactional
@@ -363,12 +372,25 @@ public class BaiVietServiceImpl implements BaiVietService {
             // Nếu đã thích rồi và đang ở trạng thái đã hủy thích, cập nhật lại thành thích
             LuotThichBaiViet luotThich = existingLike.get();
             if (!luotThich.getTrangThaiThich()) {
+                // Ghi tương tác vào chi_tiet_tuong_tac
+                ChiTietTuongTac chiTiet = new ChiTietTuongTac();
+                chiTiet.setNguoi1(nguoiDung);
+                chiTiet.setNguoi2(baiViet.getNguoiDung());
+                chiTiet.setLoaiTuongTac(LoaiTuongTac.like_bai_viet);
+                chiTiet.setDiemTuongTac(5);
+                chiTiet.setNgayTao(java.time.LocalDateTime.now());
+                chiTietTuongTacRepository.save(chiTiet);
                 luotThich.setTrangThaiThich(true);
                 luotThich.setNgayHuyThich(null);
                 luotThichBaiVietRepository.save(luotThich);
                 baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
                 baiVietRepository.save(baiViet);
-                // Đã bỏ logic gửi thông báo ở đây
+                logger.info("[LikeBaiViet] Gọi gợi ý kết bạn cho userId: {}", idNguoiDung);
+                goiYKetBanService.taoGoiYKetBan(idNguoiDung);
+                if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
+                    logger.info("[LikeBaiViet] Gọi gợi ý kết bạn cho chủ bài viết userId: {}", baiViet.getNguoiDung().getId());
+                    goiYKetBanService.taoGoiYKetBan(baiViet.getNguoiDung().getId());
+                }
                 return true;
             }
             // Nếu đã thích rồi và vẫn đang thích, không làm gì cả
@@ -381,13 +403,23 @@ public class BaiVietServiceImpl implements BaiVietService {
             luotThich.setTrangThaiThich(true);
             luotThichBaiVietRepository.save(luotThich);
             
+            // Ghi tương tác vào chi_tiet_tuong_tac
+            ChiTietTuongTac chiTiet = new ChiTietTuongTac();
+            chiTiet.setNguoi1(nguoiDung);
+            chiTiet.setNguoi2(baiViet.getNguoiDung());
+            chiTiet.setLoaiTuongTac(LoaiTuongTac.like_bai_viet);
+            chiTiet.setDiemTuongTac(5);
+            chiTiet.setNgayTao(java.time.LocalDateTime.now());
+            chiTietTuongTacRepository.save(chiTiet);
+
             // Tăng số lượt thích của bài viết
             baiViet.setSoLuotThich(baiViet.getSoLuotThich() + 1);
             baiVietRepository.save(baiViet);
-            // Đã bỏ logic gửi thông báo ở đây
-            goiYKetBanRepository.calculateFriendSuggestions(idNguoiDung);
+            logger.info("[LikeBaiViet] Gọi gợi ý kết bạn cho userId: {}", idNguoiDung);
+            goiYKetBanService.taoGoiYKetBan(idNguoiDung);
             if (!baiViet.getNguoiDung().getId().equals(idNguoiDung)) {
-                goiYKetBanRepository.calculateFriendSuggestions(baiViet.getNguoiDung().getId());
+                logger.info("[LikeBaiViet] Gọi gợi ý kết bạn cho chủ bài viết userId: {}", baiViet.getNguoiDung().getId());
+                goiYKetBanService.taoGoiYKetBan(baiViet.getNguoiDung().getId());
             }
             return true;
         }
@@ -447,6 +479,17 @@ public class BaiVietServiceImpl implements BaiVietService {
             }
         }
 
+        // Lấy danh sách userId đã chặn mình hoặc mình đã chặn
+        List<KetBan> blocksByMe = ketBanRepository.findByNguoiGuiAndTrangThai(user, com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan.bi_chan);
+        List<KetBan> blocksToMe = ketBanRepository.findByNguoiNhanAndTrangThai(user, com.mangxahoi.mangxahoi_backend.enums.TrangThaiKetBan.bi_chan);
+        Set<Integer> blockedUserIds = new java.util.HashSet<>();
+        for (KetBan k : blocksByMe) {
+            blockedUserIds.add(k.getNguoiNhan().getId());
+        }
+        for (KetBan k : blocksToMe) {
+            blockedUserIds.add(k.getNguoiGui().getId());
+        }
+
         // Lấy bài viết công khai
         List<BaiViet> congKhai = baiVietRepository.findAllPublicPosts(PageRequest.of(0, 100)).getContent();
         // Lấy bài viết bạn bè (che_do_rieng_tu = 'ban_be' và id_nguoi_dung in friendIds)
@@ -464,6 +507,7 @@ public class BaiVietServiceImpl implements BaiVietService {
         all.addAll(cuaToi);
         all.addAll(xuHuong);
         java.util.List<BaiViet> sorted = all.stream()
+            .filter(bv -> !blockedUserIds.contains(bv.getNguoiDung().getId()))
             .sorted(java.util.Comparator.comparing(BaiViet::getNgayTao).reversed())
             .toList();
 

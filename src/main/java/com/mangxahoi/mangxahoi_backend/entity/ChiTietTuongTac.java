@@ -64,10 +64,20 @@ public class ChiTietTuongTac {
 
     @PrePersist
     protected void onCreate() {
+        if (ngayTao == null) {
         ngayTao = LocalDateTime.now();
+        }
+        if (diemTuongTac == null) {
         diemTuongTac = 0;
+        }
+        if (trongSo == null) {
         trongSo = new BigDecimal("1.00");
+        }
+        if (thoiGianTuongTac == null) {
         thoiGianTuongTac = 0;
+        }
+        if (nguonTuongTac == null) {
         nguonTuongTac = NguonTuongTac.news_feed;
+        }
     }
 } 
