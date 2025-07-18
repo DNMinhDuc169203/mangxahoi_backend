@@ -159,7 +159,7 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public Page<NguoiDungDTO> danhSachNguoiDung(Pageable pageable) {
-        return nguoiDungRepository.findAll(pageable)
+        return nguoiDungRepository.findAllUserKhongPhaiAdmin(pageable)
                 .map(this::chuyenSangDTO);
     }
 

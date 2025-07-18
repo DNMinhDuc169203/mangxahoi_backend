@@ -158,6 +158,11 @@ public class NguoiDungServiceImpl implements NguoiDungService {
         if (nguoiDung.getBiXoaMem()) {
             throw new AuthException("Tài khoản đã bị xóa", AuthException.TAI_KHOAN_BI_XOA);
         }
+
+        // Chặn tài khoản admin đăng nhập ở đây
+        if (nguoiDung.getVaiTro() == com.mangxahoi.mangxahoi_backend.enums.VaiTro.quan_tri_vien) {
+            throw new AuthException("Tài khoản này là admin, vui lòng đăng nhập ở trang quản trị.", "KHONG_HO_TRO_ADMIN_LOGIN_USER");
+        }
         
         // Cập nhật thời gian đăng nhập cuối
         nguoiDung.setLanDangNhapCuoi(LocalDateTime.now());

@@ -27,4 +27,7 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
     long countByNgayTaoAfter(java.time.LocalDateTime from);
     // Thêm method cho scheduler tự động mở khóa
     List<NguoiDung> findAllByBiTamKhoaTrueAndNgayMoKhoaIsNotNull();
+    // Lấy tất cả user thường (không bao gồm admin)
+    @Query("SELECT n FROM NguoiDung n WHERE n.vaiTro <> com.mangxahoi.mangxahoi_backend.enums.VaiTro.quan_tri_vien")
+    Page<NguoiDung> findAllUserKhongPhaiAdmin(Pageable pageable);
 } 
