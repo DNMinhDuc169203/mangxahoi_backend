@@ -19,7 +19,7 @@ public class TokenUtil {
      * Lấy thông tin người dùng từ token
      * 
      * @param token Token xác thực
-     * @return Thông tin người dùng
+     * @return Thông tin người dùng 
      * @throws AuthException Nếu token không hợp lệ hoặc đã hết hạn
      */
     public NguoiDung layNguoiDungTuToken(String token) {

@@ -18,9 +18,7 @@ public class AutoUnlockAccountScheduler {
     private final NguoiDungRepository nguoiDungRepository;
     private final ThongBaoService thongBaoService;
 
-    /**
-     * Chạy mỗi 5 phút: tự động mở khóa tài khoản nếu đã hết hạn khóa
-     */
+    /**Chạy mỗi 5 phút: tự động mở khóa tài khoản nếu đã hết hạn khóa*/
     @Scheduled(fixedRate = 5 * 60 * 1000) // 5 phút
     public void autoUnlockAccounts() {
         List<NguoiDung> lockedUsers = nguoiDungRepository.findAllByBiTamKhoaTrueAndNgayMoKhoaIsNotNull();

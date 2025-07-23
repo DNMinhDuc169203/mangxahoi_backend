@@ -444,7 +444,6 @@ public class NguoiDungServiceImpl implements NguoiDungService {
     public NguoiDungDTO layThongTinHienTai(String token) {
         // Lấy thông tin người dùng từ token
         NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
-        
         // Chuyển đổi sang DTO và trả về
         return chuyenSangDTO(nguoiDung);
     }
