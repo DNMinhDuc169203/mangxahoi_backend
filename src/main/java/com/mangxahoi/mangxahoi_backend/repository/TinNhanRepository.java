@@ -40,6 +40,7 @@ public interface TinNhanRepository extends JpaRepository<TinNhan, Integer> {
     void deleteByCuocTroChuyen(CuocTroChuyen cuocTroChuyen);
     
     void deleteByNguoiGui(NguoiDung nguoiGui);
+    void deleteAllByCuocTroChuyen(CuocTroChuyen cuocTroChuyen);
 
     List<TinNhan> findByCuocTroChuyenIdAndNguoiGuiIdNotAndDaDocFalse(Integer idCuocTroChuyen, Integer idNguoiDoc);
 }

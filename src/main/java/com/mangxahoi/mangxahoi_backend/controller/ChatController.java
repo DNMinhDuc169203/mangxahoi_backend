@@ -142,6 +142,40 @@ public List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(
     return chatService.layDanhSachCuocTroChuyen(nguoiDung.getId());
 }
 
+    @PostMapping("/cuoc-tro-chuyen/xoa-thanh-vien")
+    public ResponseEntity<?> kickMemberFromGroup(
+        @RequestHeader("Authorization") String authorization,
+        @RequestBody Map<String, Integer> body
+    ) {
+        NguoiDung nguoiThucHien = getUserFromToken(authorization);
+        Integer idCuocTroChuyen = body.get("idCuocTroChuyen");
+        Integer idNguoiBiXoa = body.get("idNguoiBiXoa");
+        chatService.kickMemberFromGroup(idCuocTroChuyen, idNguoiBiXoa, nguoiThucHien.getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/cuoc-tro-chuyen/roi-nhom")
+    public ResponseEntity<?> leaveGroup(
+        @RequestHeader("Authorization") String authorization,
+        @RequestBody Map<String, Integer> body
+    ) {
+        NguoiDung nguoiRoi = getUserFromToken(authorization);
+        Integer idCuocTroChuyen = body.get("idCuocTroChuyen");
+        chatService.leaveGroup(idCuocTroChuyen, nguoiRoi.getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/cuoc-tro-chuyen/xoa-nhom")
+    public ResponseEntity<?> xoaNhom(
+        @RequestHeader("Authorization") String authorization,
+        @RequestBody Map<String, Integer> body
+    ) {
+        NguoiDung nguoiThucHien = getUserFromToken(authorization);
+        Integer idCuocTroChuyen = body.get("idCuocTroChuyen");
+        chatService.xoaNhom(idCuocTroChuyen, nguoiThucHien.getId());
+        return ResponseEntity.ok().build();
+    }
+
     private NguoiDung getUserFromToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new SecurityException("Invalid or missing Authorization header");

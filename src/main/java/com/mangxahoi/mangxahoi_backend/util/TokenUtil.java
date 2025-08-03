@@ -15,13 +15,7 @@ public class TokenUtil {
 
     private final PhienDangNhapNguoiDungRepository phienDangNhapRepository;
 
-    /**
-     * Lấy thông tin người dùng từ token
-     * 
-     * @param token Token xác thực
-     * @return Thông tin người dùng 
-     * @throws AuthException Nếu token không hợp lệ hoặc đã hết hạn
-     */
+
     public NguoiDung layNguoiDungTuToken(String token) {
         if (token == null || token.trim().isEmpty()) {
             throw new AuthException("Token không được để trống", AuthException.TOKEN_KHONG_HOP_LE);
@@ -39,12 +33,6 @@ public class TokenUtil {
         return phien.getNguoiDung();
     }
 
-    /**
-     * Kiểm tra token có hợp lệ không
-     * 
-     * @param token Token cần kiểm tra
-     * @return true nếu token hợp lệ, false nếu không
-     */
     public boolean kiemTraTokenHopLe(String token) {
         try {
             layNguoiDungTuToken(token);

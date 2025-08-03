@@ -15,4 +15,7 @@ public interface ChatService {
     List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDung);
 
     void markMessagesAsRead(Integer idCuocTroChuyen, Integer idNguoiDoc);
+    void kickMemberFromGroup(Integer idCuocTroChuyen, Integer idNguoiBiXoa, Integer idNguoiThucHien);
+    void leaveGroup(Integer idCuocTroChuyen, Integer idNguoiRoi);
+    void xoaNhom(Integer idCuocTroChuyen, Integer idNguoiThucHien);
 }

@@ -30,4 +30,8 @@ public interface ThanhVienCuocTroChuyenRepository extends JpaRepository<ThanhVie
     void deleteByCuocTroChuyen(CuocTroChuyen cuocTroChuyen);
     
     void deleteByNguoiDung(NguoiDung nguoiDung);
+    
+    void deleteByCuocTroChuyenAndNguoiDung(CuocTroChuyen cuocTroChuyen, NguoiDung nguoiDung);
+
+    void deleteAllByCuocTroChuyen(CuocTroChuyen cuocTroChuyen);
 } 

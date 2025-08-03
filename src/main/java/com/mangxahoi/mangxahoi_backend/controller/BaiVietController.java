@@ -178,16 +178,7 @@ public class BaiVietController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-    
-    /**
-     * Lấy danh sách bài viết của người dùng
-     * 
-     * @param idNguoiDung ID của người dùng
-     * @param authorization Authorization header
-     * @param page Số trang
-     * @param size Số lượng mỗi trang
-     * @return Danh sách bài viết
-     */
+
     @GetMapping("/nguoi-dung/{idNguoiDung}")
     public ResponseEntity<Map<String, Object>> layBaiVietCuaNguoiDung(
             @PathVariable Integer idNguoiDung,

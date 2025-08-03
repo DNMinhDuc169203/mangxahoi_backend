@@ -29,6 +29,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ChatServiceImpl implements ChatService {
@@ -198,6 +199,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public void themThanhVien(ThemThanhVienRequest request) {
         CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(request.getIdCuocTroChuyen())
             .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
@@ -224,6 +226,7 @@ public class ChatServiceImpl implements ChatService {
         if (idThanhVienMoiList == null || idThanhVienMoiList.isEmpty()) {
             throw new RuntimeException("Danh sách thành viên mới không được để trống");
         }
+        List<String> tenThanhVienMoi = new ArrayList<>();
         for (Integer idThanhVienMoi : idThanhVienMoiList) {
             NguoiDung thanhVienMoi = nguoiDungRepository.findById(idThanhVienMoi)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với id: " + idThanhVienMoi));
@@ -239,12 +242,26 @@ public class ChatServiceImpl implements ChatService {
             thanhVienMoiEntity.setNguoiDung(thanhVienMoi);
             thanhVienMoiEntity.setVaiTro(VaiTroThanhVien.thanh_vien);
             thanhVienCuocTroChuyenRepository.save(thanhVienMoiEntity);
+            tenThanhVienMoi.add(thanhVienMoi.getHoTen());
         }
         
         // Cập nhật số thành viên
         long soThanhVienHienTai = thanhVienCuocTroChuyenRepository.countByCuocTroChuyen(cuocTroChuyen);
         cuocTroChuyen.setSoThanhVien((int) soThanhVienHienTai);
         cuocTroChuyenRepository.save(cuocTroChuyen);
+
+        // Tạo tin nhắn thông báo khi thêm thành viên
+        if (!tenThanhVienMoi.isEmpty()) {
+            TinNhan thongBao = new TinNhan();
+            thongBao.setCuocTroChuyen(cuocTroChuyen);
+            thongBao.setNguoiGui(nguoiThucHien.getNguoiDung());
+            String tenStr = String.join(", ", tenThanhVienMoi);
+            thongBao.setNoiDung(tenStr + (tenThanhVienMoi.size() > 1 ? " đã được thêm vào nhóm" : " đã được thêm vào nhóm"));
+            thongBao.setLoaiTinNhan(LoaiTinNhan.thong_bao);
+            thongBao.setNgayTao(LocalDateTime.now());
+            thongBao.setDaDoc(false);
+            tinNhanRepository.save(thongBao);
+        }
     }
 
     @Override
@@ -425,4 +442,105 @@ public void markMessagesAsRead(Integer idCuocTroChuyen, Integer idNguoiDoc) {
         tinNhanRepository.save(msg);
     }
 }
+
+    @Override
+    @Transactional
+    public void kickMemberFromGroup(Integer idCuocTroChuyen, Integer idNguoiBiXoa, Integer idNguoiThucHien) {
+        CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(idCuocTroChuyen)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+        if (cuocTroChuyen.getLoai() != LoaiCuocTroChuyen.nhom) {
+            throw new RuntimeException("Chỉ có thể xóa thành viên khỏi nhóm");
+        }
+        // Kiểm tra quyền
+        ThanhVienCuocTroChuyen nguoiThucHien = thanhVienCuocTroChuyenRepository
+            .findByCuocTroChuyenAndNguoiDung(cuocTroChuyen, nguoiDungRepository.findById(idNguoiThucHien)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người thực hiện")))
+            .orElseThrow(() -> new RuntimeException("Người thực hiện không phải thành viên nhóm"));
+        boolean isAdmin = nguoiThucHien.getVaiTro() == VaiTroThanhVien.quan_tri;
+        boolean isCreator = cuocTroChuyen.getNguoiTao() != null && cuocTroChuyen.getNguoiTao().getId().equals(idNguoiThucHien);
+        if (!isAdmin && !isCreator) {
+            throw new RuntimeException("Chỉ trưởng nhóm hoặc quản trị viên mới có quyền xóa thành viên");
+        }
+        // Không cho xóa chính mình bằng API này
+        if (idNguoiBiXoa.equals(idNguoiThucHien)) {
+            throw new RuntimeException("Không thể tự xóa chính mình, hãy dùng chức năng rời nhóm");
+        }
+        NguoiDung nguoiBiXoa = nguoiDungRepository.findById(idNguoiBiXoa)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy thành viên bị xóa"));
+        if (!thanhVienCuocTroChuyenRepository.existsByCuocTroChuyenAndNguoiDung(cuocTroChuyen, nguoiBiXoa)) {
+            throw new RuntimeException("Người này không phải thành viên nhóm");
+        }
+        thanhVienCuocTroChuyenRepository.deleteByCuocTroChuyenAndNguoiDung(cuocTroChuyen, nguoiBiXoa);
+        // Cập nhật số thành viên
+        long soThanhVienHienTai = thanhVienCuocTroChuyenRepository.countByCuocTroChuyen(cuocTroChuyen);
+        cuocTroChuyen.setSoThanhVien((int) soThanhVienHienTai);
+        cuocTroChuyenRepository.save(cuocTroChuyen);
+
+        // Tạo tin nhắn thông báo khi xóa thành viên
+        TinNhan thongBao = new TinNhan();
+        thongBao.setCuocTroChuyen(cuocTroChuyen);
+        thongBao.setNguoiGui(nguoiThucHien.getNguoiDung()); // Người thực hiện hành động
+        thongBao.setNoiDung(nguoiBiXoa.getHoTen() + " đã bị xóa khỏi nhóm");
+        thongBao.setLoaiTinNhan(LoaiTinNhan.thong_bao);
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setDaDoc(false);
+        tinNhanRepository.save(thongBao);
+    }
+
+    @Override
+    @Transactional
+    public void leaveGroup(Integer idCuocTroChuyen, Integer idNguoiRoi) {
+        CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(idCuocTroChuyen)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+        if (cuocTroChuyen.getLoai() != LoaiCuocTroChuyen.nhom) {
+            throw new RuntimeException("Chỉ có thể rời nhóm");
+        }
+        NguoiDung nguoiRoi = nguoiDungRepository.findById(idNguoiRoi)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy người rời nhóm"));
+        // Không cho trưởng nhóm rời nhóm nếu là người duy nhất
+        if (cuocTroChuyen.getNguoiTao() != null && cuocTroChuyen.getNguoiTao().getId().equals(idNguoiRoi)) {
+            long soThanhVien = thanhVienCuocTroChuyenRepository.countByCuocTroChuyen(cuocTroChuyen);
+            if (soThanhVien <= 1) {
+                throw new RuntimeException("Trưởng nhóm không thể rời nhóm khi là thành viên duy nhất. Hãy xóa nhóm hoặc chuyển quyền trưởng nhóm.");
+            }
+            // TODO: Có thể chuyển quyền trưởng nhóm cho người khác trước khi rời
+        }
+        if (!thanhVienCuocTroChuyenRepository.existsByCuocTroChuyenAndNguoiDung(cuocTroChuyen, nguoiRoi)) {
+            throw new RuntimeException("Bạn không phải thành viên nhóm");
+        }
+        thanhVienCuocTroChuyenRepository.deleteByCuocTroChuyenAndNguoiDung(cuocTroChuyen, nguoiRoi);
+        // Cập nhật số thành viên
+        long soThanhVienHienTai = thanhVienCuocTroChuyenRepository.countByCuocTroChuyen(cuocTroChuyen);
+        cuocTroChuyen.setSoThanhVien((int) soThanhVienHienTai);
+        cuocTroChuyenRepository.save(cuocTroChuyen);
+
+        // Tạo tin nhắn thông báo khi rời nhóm
+        TinNhan thongBao = new TinNhan();
+        thongBao.setCuocTroChuyen(cuocTroChuyen);
+        thongBao.setNguoiGui(nguoiRoi); // hoặc null nếu muốn
+        thongBao.setNoiDung(nguoiRoi.getHoTen() + " đã rời nhóm");
+        thongBao.setLoaiTinNhan(LoaiTinNhan.thong_bao); // hoặc LoaiTinNhan.he_thong nếu enum của bạn là vậy
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setDaDoc(false);
+        tinNhanRepository.save(thongBao);
+    }
+
+    @Override
+    @Transactional
+    public void xoaNhom(Integer idCuocTroChuyen, Integer idNguoiThucHien) {
+        CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(idCuocTroChuyen)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+        if (cuocTroChuyen.getLoai() != LoaiCuocTroChuyen.nhom) {
+            throw new RuntimeException("Chỉ có thể xóa nhóm");
+        }
+        if (cuocTroChuyen.getNguoiTao() == null || !cuocTroChuyen.getNguoiTao().getId().equals(idNguoiThucHien)) {
+            throw new RuntimeException("Chỉ trưởng nhóm mới có quyền xóa nhóm");
+        }
+        // Xóa tất cả thành viên nhóm
+        thanhVienCuocTroChuyenRepository.deleteAllByCuocTroChuyen(cuocTroChuyen);
+        // Xóa tất cả tin nhắn của nhóm (nếu muốn)
+        tinNhanRepository.deleteAllByCuocTroChuyen(cuocTroChuyen);
+        // Xóa nhóm
+        cuocTroChuyenRepository.delete(cuocTroChuyen);
+    }
 }

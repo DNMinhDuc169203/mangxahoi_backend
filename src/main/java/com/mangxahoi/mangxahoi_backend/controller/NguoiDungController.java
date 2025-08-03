@@ -41,6 +41,14 @@ public class NguoiDungController {
     private final CloudinaryService cloudinaryService;
     private final TokenUtil tokenUtil;
 
+    private NguoiDung getUserFromToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new SecurityException("Invalid or missing Authorization header");
+        }
+        String token = authHeader.substring(7);
+        return tokenUtil.layNguoiDungTuToken(token);
+    }
+
     @PostMapping("/dang-ky")
     public ResponseEntity<Object> dangKy(@Valid @RequestBody NguoiDungDTO nguoiDungDTO) {
         try {
@@ -215,8 +223,7 @@ public class NguoiDungController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "laAnhChinh", defaultValue = "true") boolean laAnhChinh) {
         try {
-            String token = authorization.substring(7);
-            com.mangxahoi.mangxahoi_backend.entity.NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+            NguoiDung nguoiDung = getUserFromToken(authorization);
             Integer id = nguoiDung.getId();
 
             String imageUrl = nguoiDungService.uploadAnhDaiDien(id, file, laAnhChinh);
@@ -263,8 +270,7 @@ public class NguoiDungController {
             @RequestHeader("Authorization") String authorization,
             @PathVariable Integer anhId) {
         try {
-            String token = authorization.substring(7);
-            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+            NguoiDung nguoiDung = getUserFromToken(authorization);
 
             // Kiểm tra ảnh có tồn tại và thuộc về người dùng không
             NguoiDungAnh anh = nguoiDungAnhRepository.findById(anhId)
@@ -295,8 +301,7 @@ public class NguoiDungController {
     public ResponseEntity<List<NguoiDungAnhDTO>> layDanhSachAnh(
             @RequestHeader("Authorization") String authorization) {
         try {
-            String token = authorization.substring(7);
-            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+            NguoiDung nguoiDung = getUserFromToken(authorization);
             List<NguoiDungAnh> anhDaiDiens = nguoiDungAnhRepository.findByNguoiDung(nguoiDung);
 
             List<NguoiDungAnhDTO> dtos = anhDaiDiens.stream().map(anh -> {
@@ -318,8 +323,7 @@ public class NguoiDungController {
     public ResponseEntity<NguoiDungAnhDTO> layAnhChinh(
              @RequestHeader("Authorization") String authorization) {
         try {
-            String token = authorization.substring(7);
-            NguoiDung nguoiDung = tokenUtil.layNguoiDungTuToken(token);
+            NguoiDung nguoiDung = getUserFromToken(authorization);
             Optional<NguoiDungAnh> anhChinhOpt = nguoiDungAnhRepository.findByNguoiDungAndLaAnhChinh(nguoiDung, true);
 
             return anhChinhOpt.map(anhChinh -> {
