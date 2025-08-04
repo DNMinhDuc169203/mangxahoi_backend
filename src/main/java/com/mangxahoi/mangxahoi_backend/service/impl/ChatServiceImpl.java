@@ -125,15 +125,31 @@ public class ChatServiceImpl implements ChatService {
             NguoiDung nguoi1 = thanhVienEntities.get(0);
             NguoiDung nguoi2 = thanhVienEntities.get(1);
             NguoiDung doiPhuong = nguoi1.getId().equals(request.getIdNguoiTao()) ? nguoi2 : nguoi1;
-            var existing = cuocTroChuyenRepository.findPrivateConversationBetweenUsers(nguoi1, nguoi2);
-            if (existing.isPresent()) {
-                CuocTroChuyen cuoc = existing.get();
+            
+            // Tìm cuộc trò chuyện cá nhân hiện có bằng cách tìm qua ThanhVienCuocTroChuyen
+            List<ThanhVienCuocTroChuyen> thanhVien1 = thanhVienCuocTroChuyenRepository.findByNguoiDung(nguoi1);
+            List<ThanhVienCuocTroChuyen> thanhVien2 = thanhVienCuocTroChuyenRepository.findByNguoiDung(nguoi2);
+            
+            // Tìm cuộc trò chuyện chung giữa 2 người
+            CuocTroChuyen existingConv = null;
+            for (ThanhVienCuocTroChuyen tv1 : thanhVien1) {
+                for (ThanhVienCuocTroChuyen tv2 : thanhVien2) {
+                    if (tv1.getCuocTroChuyen().getId().equals(tv2.getCuocTroChuyen().getId()) 
+                        && tv1.getCuocTroChuyen().getLoai() == LoaiCuocTroChuyen.ca_nhan) {
+                        existingConv = tv1.getCuocTroChuyen();
+                        break;
+                    }
+                }
+                if (existingConv != null) break;
+            }
+            
+            if (existingConv != null) {
                 return TaoCuocTroChuyenResponse.builder()
-                    .idCuocTroChuyen(cuoc.getId())
-                    .loai(cuoc.getLoai().name())
-                    .tenNhom(cuoc.getTenNhom())
-                    .anhNhom(cuoc.getAnhNhom())
-                    .idNguoiTao(cuoc.getNguoiTao() != null ? cuoc.getNguoiTao().getId() : null)
+                    .idCuocTroChuyen(existingConv.getId())
+                    .loai(existingConv.getLoai().name())
+                    .tenNhom(existingConv.getTenNhom())
+                    .anhNhom(existingConv.getAnhNhom())
+                    .idNguoiTao(existingConv.getNguoiTao() != null ? existingConv.getNguoiTao().getId() : null)
                     .idThanhVien(new ArrayList<>(idThanhVien))
                     .idDoiPhuong(doiPhuong.getId())
                     .tenDoiPhuong(doiPhuong.getHoTen())
@@ -285,6 +301,59 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    public void xoaTinNhan(Integer idTinNhan, Integer idCuocTroChuyen, Integer idNguoiThucHien) {
+        TinNhan tinNhan = tinNhanRepository.findById(idTinNhan)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy tin nhắn"));
+        
+        CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(idCuocTroChuyen)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+        
+        // Kiểm tra người thực hiện có phải là người gửi tin nhắn không
+        if (!tinNhan.getNguoiGui().getId().equals(idNguoiThucHien)) {
+            throw new RuntimeException("Chỉ người gửi tin nhắn mới có thể xóa");
+        }
+        
+        // Kiểm tra tin nhắn thuộc về cuộc trò chuyện đúng không
+        if (!tinNhan.getCuocTroChuyen().getId().equals(idCuocTroChuyen)) {
+            throw new RuntimeException("Tin nhắn không thuộc về cuộc trò chuyện này");
+        }
+        
+        // Kiểm tra tin nhắn đã bị xóa chưa
+        if (tinNhan.getDaXoa() != null && tinNhan.getDaXoa()) {
+            throw new RuntimeException("Tin nhắn đã được xóa trước đó");
+        }
+        
+        // Xóa mềm tin nhắn
+        tinNhan.setDaXoa(true);
+        tinNhanRepository.save(tinNhan);
+    }
+
+    @Override
+    @Transactional
+    public void xoaToanBoTinNhan(Integer idCuocTroChuyen, Integer idNguoiThucHien) {
+        CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(idCuocTroChuyen)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+        
+        // Kiểm tra người thực hiện có phải là thành viên của cuộc trò chuyện không
+        ThanhVienCuocTroChuyen thanhVien = thanhVienCuocTroChuyenRepository.findByCuocTroChuyenAndNguoiDung(cuocTroChuyen, nguoiDungRepository.findById(idNguoiThucHien).orElse(null))
+            .orElseThrow(() -> new RuntimeException("Bạn không phải thành viên của cuộc trò chuyện này"));
+        
+        // Lấy tất cả tin nhắn trong cuộc trò chuyện
+        List<TinNhan> tinNhans = tinNhanRepository.findByCuocTroChuyen(cuocTroChuyen);
+        
+        // Xóa mềm tất cả tin nhắn trong cuộc trò chuyện
+        for (TinNhan tinNhan : tinNhans) {
+            if (tinNhan.getDaXoa() == null || !tinNhan.getDaXoa()) {
+                tinNhan.setDaXoa(true);
+                tinNhanRepository.save(tinNhan);
+            }
+        }
+        
+        // Xóa thành viên khỏi cuộc trò chuyện (xóa khung cuộc trò chuyện)
+        thanhVienCuocTroChuyenRepository.delete(thanhVien);
+    }
+
+    @Override
     public List<GuiTinNhanResponse> timKiemTinNhan(TimKiemTinNhanRequest request) {
         CuocTroChuyen cuocTroChuyen = cuocTroChuyenRepository.findById(request.getIdCuocTroChuyen())
             .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
@@ -305,37 +374,34 @@ public class ChatServiceImpl implements ChatService {
         // Chuyển đổi sang response
         List<GuiTinNhanResponse> responses = new ArrayList<>();
         for (TinNhan tinNhan : tinNhans.getContent()) {
-            // Chỉ trả về tin nhắn chưa bị thu hồi
-            if (tinNhan.getDaXoa() == null || !tinNhan.getDaXoa()) {
-                GuiTinNhanResponse response = new GuiTinNhanResponse();
-                response.setIdTinNhan(tinNhan.getId());
-                response.setIdCuocTroChuyen(cuocTroChuyen.getId());
-                response.setIdNguoiGui(tinNhan.getNguoiGui().getId());
-                response.setNoiDung(tinNhan.getNoiDung());
-                response.setLoaiTinNhan(tinNhan.getLoaiTinNhan().name());
-                response.setUrlTepTin(tinNhan.getUrlTepTin());
-                response.setDaDoc(tinNhan.getDaDoc());
-                response.setNgayTao(tinNhan.getNgayTao());
-                // Bổ sung tên và avatar người gửi
-                response.setTenNguoiGui(tinNhan.getNguoiGui().getHoTen());
-                if (tinNhan.getNguoiGui().getAnhDaiDien() != null && !tinNhan.getNguoiGui().getAnhDaiDien().isEmpty()) {
-                    response.setAnhNguoiGui(tinNhan.getNguoiGui().getAnhDaiDien().get(0).getUrl());
-                } else {
-                    response.setAnhNguoiGui(null);
-                }
-                // Bổ sung danh sách người đã đọc nếu là nhóm
-                if (isGroup) {
-                    List<TinNhanDaDoc> daDocList = tinNhanDaDocRepository.findByTinNhan(tinNhan);
-                    List<NguoiDocDTO> nguoiDocDTOs = daDocList.stream().map(daDoc -> NguoiDocDTO.builder()
-                        .id(daDoc.getNguoiDoc().getId())
-                        .hoTen(daDoc.getNguoiDoc().getHoTen())
-                        .anhDaiDien((daDoc.getNguoiDoc().getAnhDaiDien() != null && !daDoc.getNguoiDoc().getAnhDaiDien().isEmpty()) ? daDoc.getNguoiDoc().getAnhDaiDien().get(0).getUrl() : null)
-                        .build()
-                    ).collect(Collectors.toList());
-                    response.setDanhSachNguoiDoc(nguoiDocDTOs);
-                }
-                responses.add(response);
+            GuiTinNhanResponse response = new GuiTinNhanResponse();
+            response.setIdTinNhan(tinNhan.getId());
+            response.setIdCuocTroChuyen(cuocTroChuyen.getId());
+            response.setIdNguoiGui(tinNhan.getNguoiGui().getId());
+            response.setNoiDung(tinNhan.getNoiDung());
+            response.setLoaiTinNhan(tinNhan.getLoaiTinNhan().name());
+            response.setUrlTepTin(tinNhan.getUrlTepTin());
+            response.setDaDoc(tinNhan.getDaDoc());
+            response.setNgayTao(tinNhan.getNgayTao());
+            // Bổ sung tên và avatar người gửi
+            response.setTenNguoiGui(tinNhan.getNguoiGui().getHoTen());
+            if (tinNhan.getNguoiGui().getAnhDaiDien() != null && !tinNhan.getNguoiGui().getAnhDaiDien().isEmpty()) {
+                response.setAnhNguoiGui(tinNhan.getNguoiGui().getAnhDaiDien().get(0).getUrl());
+            } else {
+                response.setAnhNguoiGui(null);
             }
+            // Bổ sung danh sách người đã đọc nếu là nhóm
+            if (isGroup) {
+                List<TinNhanDaDoc> daDocList = tinNhanDaDocRepository.findByTinNhan(tinNhan);
+                List<NguoiDocDTO> nguoiDocDTOs = daDocList.stream().map(daDoc -> NguoiDocDTO.builder()
+                    .id(daDoc.getNguoiDoc().getId())
+                    .hoTen(daDoc.getNguoiDoc().getHoTen())
+                    .anhDaiDien((daDoc.getNguoiDoc().getAnhDaiDien() != null && !daDoc.getNguoiDoc().getAnhDaiDien().isEmpty()) ? daDoc.getNguoiDoc().getAnhDaiDien().get(0).getUrl() : null)
+                    .build()
+                ).collect(Collectors.toList());
+                response.setDanhSachNguoiDoc(nguoiDocDTOs);
+            }
+            responses.add(response);
         }
         
         return responses;

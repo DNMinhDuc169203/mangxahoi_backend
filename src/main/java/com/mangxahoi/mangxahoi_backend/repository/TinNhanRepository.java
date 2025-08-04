@@ -15,23 +15,25 @@ import java.util.List;
 
 @Repository
 public interface TinNhanRepository extends JpaRepository<TinNhan, Integer> {
-    List<TinNhan> findByCuocTroChuyen(CuocTroChuyen cuocTroChuyen);
+    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND (t.daXoa IS NULL OR t.daXoa = false)")
+    List<TinNhan> findByCuocTroChuyen(@Param("cuocTroChuyen") CuocTroChuyen cuocTroChuyen);
     
-    Page<TinNhan> findByCuocTroChuyenOrderByNgayTaoDesc(CuocTroChuyen cuocTroChuyen, Pageable pageable);
+    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND (t.daXoa IS NULL OR t.daXoa = false) ORDER BY t.ngayTao DESC")
+    Page<TinNhan> findByCuocTroChuyenOrderByNgayTaoDesc(@Param("cuocTroChuyen") CuocTroChuyen cuocTroChuyen, Pageable pageable);
     
     List<TinNhan> findByNguoiGui(NguoiDung nguoiGui);
     
-    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND t.ngayTao > :lastSeen ORDER BY t.ngayTao ASC")
+    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND t.ngayTao > :lastSeen AND (t.daXoa IS NULL OR t.daXoa = false) ORDER BY t.ngayTao ASC")
     List<TinNhan> findUnreadMessages(
             @Param("cuocTroChuyen") CuocTroChuyen cuocTroChuyen,
             @Param("lastSeen") LocalDateTime lastSeen);
     
-    @Query("SELECT COUNT(t) FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND t.daDoc = false AND t.nguoiGui != :currentUser")
+    @Query("SELECT COUNT(t) FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND t.daDoc = false AND t.nguoiGui != :currentUser AND (t.daXoa IS NULL OR t.daXoa = false)")
     long countUnreadMessagesByConversation(
             @Param("cuocTroChuyen") CuocTroChuyen cuocTroChuyen,
             @Param("currentUser") NguoiDung currentUser);
     
-    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND t.noiDung LIKE %:keyword%")
+    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND t.noiDung LIKE %:keyword% AND (t.daXoa IS NULL OR t.daXoa = false)")
     Page<TinNhan> searchMessagesInConversation(
             @Param("cuocTroChuyen") CuocTroChuyen cuocTroChuyen,
             @Param("keyword") String keyword,
@@ -42,5 +44,9 @@ public interface TinNhanRepository extends JpaRepository<TinNhan, Integer> {
     void deleteByNguoiGui(NguoiDung nguoiGui);
     void deleteAllByCuocTroChuyen(CuocTroChuyen cuocTroChuyen);
 
-    List<TinNhan> findByCuocTroChuyenIdAndNguoiGuiIdNotAndDaDocFalse(Integer idCuocTroChuyen, Integer idNguoiDoc);
+    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen.id = :idCuocTroChuyen AND t.nguoiGui.id != :idNguoiDoc AND t.daDoc = false AND (t.daXoa IS NULL OR t.daXoa = false)")
+    List<TinNhan> findByCuocTroChuyenIdAndNguoiGuiIdNotAndDaDocFalse(@Param("idCuocTroChuyen") Integer idCuocTroChuyen, @Param("idNguoiDoc") Integer idNguoiDoc);
+    
+    @Query("SELECT t FROM TinNhan t WHERE t.cuocTroChuyen = :cuocTroChuyen AND t.nguoiGui = :nguoiGui AND (t.daXoa IS NULL OR t.daXoa = false)")
+    List<TinNhan> findByCuocTroChuyenAndNguoiGui(@Param("cuocTroChuyen") CuocTroChuyen cuocTroChuyen, @Param("nguoiGui") NguoiDung nguoiGui);
 }

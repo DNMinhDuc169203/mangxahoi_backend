@@ -11,6 +11,8 @@ public interface ChatService {
     TaoCuocTroChuyenResponse taoCuocTroChuyen(TaoCuocTroChuyenRequest request);
     void themThanhVien(ThemThanhVienRequest request);
     void thuHoiTinNhan(ThuHoiTinNhanRequest request);
+    void xoaTinNhan(Integer idTinNhan, Integer idCuocTroChuyen, Integer idNguoiThucHien);
+    void xoaToanBoTinNhan(Integer idCuocTroChuyen, Integer idNguoiThucHien);
     List<GuiTinNhanResponse> timKiemTinNhan(TimKiemTinNhanRequest request);
     List<TaoCuocTroChuyenResponse> layDanhSachCuocTroChuyen(Integer idNguoiDung);
 

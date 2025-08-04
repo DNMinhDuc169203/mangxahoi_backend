@@ -45,14 +45,6 @@ public class BinhLuanController {
         return tokenUtil.layNguoiDungTuToken(token);
     }
 
-    /**
-     * Thêm bình luận mới cho bài viết
-     * 
-     * @param idBaiViet ID của bài viết
-     * @param authorization Token xác thực
-     * @param noiDung Nội dung bình luận
-     * @return Thông tin bình luận đã thêm
-     */
     @PostMapping("/bai-viet/{idBaiViet}")
     public ResponseEntity<BinhLuanDTO> themBinhLuan(
             @PathVariable Integer idBaiViet,

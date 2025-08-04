@@ -83,6 +83,29 @@ public class ChatController {
         chatService.thuHoiTinNhan(request);
     }
 
+    @PostMapping("/tin-nhan/xoa")
+    public ResponseEntity<?> xoaTinNhan(
+        @RequestHeader("Authorization") String authorization,
+        @RequestBody Map<String, Integer> request
+    ) {
+        NguoiDung nguoiThucHien = getUserFromToken(authorization);
+        Integer idTinNhan = request.get("idTinNhan");
+        Integer idCuocTroChuyen = request.get("idCuocTroChuyen");
+        chatService.xoaTinNhan(idTinNhan, idCuocTroChuyen, nguoiThucHien.getId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/tin-nhan/xoa-toan-bo")
+    public ResponseEntity<?> xoaToanBoTinNhan(
+        @RequestHeader("Authorization") String authorization,
+        @RequestBody Map<String, Integer> request
+    ) {
+        NguoiDung nguoiThucHien = getUserFromToken(authorization);
+        Integer idCuocTroChuyen = request.get("idCuocTroChuyen");
+        chatService.xoaToanBoTinNhan(idCuocTroChuyen, nguoiThucHien.getId());
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/tin-nhan/tim-kiem")
     public List<GuiTinNhanResponse> timKiemTinNhan(
         @RequestHeader("Authorization") String authorization,
