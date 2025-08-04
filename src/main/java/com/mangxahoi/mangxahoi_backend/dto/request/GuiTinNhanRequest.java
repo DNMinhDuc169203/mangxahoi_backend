@@ -9,6 +9,8 @@ public class GuiTinNhanRequest {
     private String noiDung;
     private String loaiTinNhan; 
     private String urlTepTin;
+    private String tenNguoiGui;
+    private String anhNguoiGui;
 
 
 }

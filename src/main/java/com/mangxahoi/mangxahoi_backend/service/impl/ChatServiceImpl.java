@@ -103,6 +103,8 @@ public class ChatServiceImpl implements ChatService {
         response.setUrlTepTin(tinNhan.getUrlTepTin());
         response.setDaDoc(tinNhan.getDaDoc());
         response.setNgayTao(tinNhan.getNgayTao());
+        response.setTenNguoiGui(request.getTenNguoiGui());
+        response.setAnhNguoiGui(request.getAnhNguoiGui());
         return response;
     }
 
